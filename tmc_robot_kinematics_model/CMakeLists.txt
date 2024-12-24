@@ -5,12 +5,13 @@ find_package(ament_cmake REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(tmc_manipulation_types REQUIRED)
+find_package(urdf REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 add_library(pinocchio_wrapper SHARED src/pinocchio_wrapper.cpp)
 target_include_directories(pinocchio_wrapper PUBLIC include ${pinocchio_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 target_link_libraries(pinocchio_wrapper ${pinocchio_LIBRARIES})
-ament_target_dependencies(pinocchio_wrapper pluginlib tmc_manipulation_types)
+ament_target_dependencies(pinocchio_wrapper pluginlib tmc_manipulation_types urdf)
 
 add_library(numeric_ik_solver SHARED src/numeric_ik_solver.cpp)
 target_include_directories(numeric_ik_solver PUBLIC include ${EIGEN3_INCLUDE_DIRS})
@@ -44,6 +45,6 @@ install(DIRECTORY include/
 
 ament_export_include_directories(include ${pinocchio_INCLUDE_DIRS})
 ament_export_libraries(numeric_ik_solver pinocchio_wrapper)
-ament_export_dependencies(pinocchio tmc_manipulation_types)
+ament_export_dependencies(pinocchio tmc_manipulation_types urdf)
 
 ament_package()

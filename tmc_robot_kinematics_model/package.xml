@@ -19,6 +19,7 @@
   <build_depend>eigen</build_depend>
 
   <depend>pinocchio</depend>
+  <depend>urdf</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>tmc_manipulation_tests</test_depend>
