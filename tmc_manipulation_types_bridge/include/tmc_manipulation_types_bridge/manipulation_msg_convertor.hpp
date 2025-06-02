@@ -25,6 +25,10 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     manipulation_msg_convertor.hpp
+/// @brief    Definition of library for message type conversion or inverse conversion
+/// @version  0.1.0
+/// @author   Takao Yasuda
 /// @note     Applied for Partner-Robot Coding Rule(Ver:x.xx)
 
 #ifndef TMC_MANIPULATION_TYPES_BRIDGE_MANIPULATION_MSG_CONVERTOR_HPP_
@@ -64,10 +68,10 @@ DAMAGE.
 
 
 namespace tmc_manipulation_types_bridge {
-/// Use the CoverT function to re -arrest to another array
-/// @param seq_in input vector type
-/// @param seq_out output vector type
-/// @param convert_func conversion function
+/// Convert array to another using convert function
+/// @param seq_in Input vector type
+/// @param seq_out Output vector type
+/// @param convert_func Conversion function
 template <typename Type_in, typename Type_out>
 void ConvertSequence(
     const std::vector<Type_in>& seq_in,
@@ -82,10 +86,10 @@ void ConvertSequence(
   }
 }
 
-/// @brief Use the CoverT function to make it to another array (if the input vector is Eigen)
-/// @param seq_in input vector type
-/// @param seq_out output vector type
-/// @param convert_func conversion function
+/// @brief Convert array to another using convert function (when input vector is Eigen type)
+/// @param seq_in Input vector type
+/// @param seq_out Output vector type
+/// @param convert_func Conversion function
 template <typename Type_in, typename Type_out>
 void ConvertSequenceWithEigenIn(
     const std::vector<Type_in, Eigen::aligned_allocator<Type_in> >& seq_in,
@@ -100,10 +104,10 @@ void ConvertSequenceWithEigenIn(
   }
 }
 
-/// Use the CoverT function to make it to another array (if the output vector is Eigen)
-/// @param seq_in input vector type
-/// @param seq_out output vector type
-/// @param convert_func conversion function
+/// Convert array to another using convert function (when output vector is Eigen type)
+/// @param seq_in Input vector type
+/// @param seq_out Output vector type
+/// @param convert_func Conversion function
 template <typename Type_in, typename Type_out>
 void ConvertSequenceWithEigenOut(
     const std::vector<Type_in>& seq_in,

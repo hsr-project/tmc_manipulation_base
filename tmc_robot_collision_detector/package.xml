@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_robot_collision_detector</name>
-  <version>2.0.0</version>
-  <description>Collision detection library with robot kinematics.</description>
+  <version>2.0.1</version>
+  <description>ロボットの運動学を用いた衝突検出ライブラリ。</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

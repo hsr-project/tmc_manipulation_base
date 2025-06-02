@@ -1,16 +1,13 @@
 <package format="3">
   <name>tmc_manipulation_types_bridge</name>
-  <version>2.0.0</version>
-  <description>Conversion library for manipulation</description>
+  <version>2.0.1</version>
+  <description>Provide a library for the declaration part of the structure, conversion from the structure to the message type, or reverse transformation.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>
 
   <url type="website">None</url>
 
-  <author>Keisuke Takeshita</author>
-  <author>Koji Terada</author>
-  <author>Satoru Onoda</author>
   <author>Takao Yasuda</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

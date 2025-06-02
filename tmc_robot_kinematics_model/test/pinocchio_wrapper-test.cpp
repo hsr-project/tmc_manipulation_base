@@ -34,7 +34,7 @@ DAMAGE.
 namespace tmc_robot_kinematics_model {
 INSTANTIATE_TYPED_TEST_SUITE_P(PinocchioWrapperTest, RobotKinematicsModelTest, PinocchioWrapper);
 
-// Read as a plugin
+// Loading as a plugin
 TEST(PinocchioWrapperTest, Plugin) {
   pluginlib::ClassLoader<IRobotKinematicsModel> loader(
       "tmc_robot_kinematics_model", "tmc_robot_kinematics_model::IRobotKinematicsModel");

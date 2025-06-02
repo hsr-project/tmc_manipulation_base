@@ -25,7 +25,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    A group of functions that handle structures exchanged with TMC_MANIPULATION
+/// @file     utils.hpp
+/// @brief    Function group for processing structures exchanged in tmc_manipulation
 #ifndef TMC_MANIPULATION_TYPES_UTILS_HPP_
 #define TMC_MANIPULATION_TYPES_UTILS_HPP_
 
@@ -35,25 +36,25 @@ DAMAGE.
 
 namespace tmc_manipulation_types {
 
-/// @brief Pull out partial Joint_state from Joint_state
-/// @param whole_joint_state Joint_state for the entire robot
-/// @param joint_names extracted joint name
-/// @return Partial Joint_state extracted
+/// @brief Extracts partial joint_state from joint_state
+/// @param whole_joint_state The entire joint_state of the robot
+/// @param joint_names Joint names to extract
+/// @return Extracted partial joint_state
 JointState ExtractPartialJointState(
     const JointState& whole_joint_state,
     const NameSeq& joint_names);
 
-/// @brief Pull out a partial Joint_trajectory from Joint_trajectory
-/// @param whole_trajectory Joint_state for the entire robot
-/// @param joint_names extracted joint name
-/// @return Partially extracted Joint_trajectory
+/// @brief Extracts partial joint_trajectory from joint_trajectory
+/// @param whole_joint_state The entire joint_state of the robot
+/// @param joint_names Joint names to extract
+/// @return Extracted partial joint_trajectory
 TimedJointTrajectory ExtractPartialJointTrajectory(
     const TimedJointTrajectory& whole_trajectory,
     const NameSeq& joint_names);
 
 
 inline uint32_t GetJointIndex(const tmc_manipulation_types::NameSeq& names,
-                              const std::string& name) {
+                             const std::string& name) {
   tmc_manipulation_types::NameSeq::const_iterator it = std::find(names.begin(), names.end(), name);
   if (it != names.end()) {
     return std::distance(names.begin(), it);

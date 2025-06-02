@@ -25,6 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/*
+ * gtest_coldet.cpp
+ *
+ *  Created on: 2012/01/16
+ *      Author: takeshita
+ */
 #include <string>
 #include <vector>
 
@@ -33,9 +39,10 @@ DAMAGE.
 #include <geometric_shapes/mesh_operations.h>
 #include <geometric_shapes/shape_operations.h>
 
+#include "tmc_collision_detector/fcl_collision_detector.hpp"
 #include "tmc_collision_detector/ODE_collision_detector.hpp"
 
-// Do you test a number of object generations?
+// Test whether many objects can be generated
 #define CREATEOBJECT_CASE6 0
 
 using tmc_manipulation_types::ObjectParameter;
@@ -82,11 +89,6 @@ const double kClosestObjectCoordinate[6][2] = {
 const double kMargin = 0.02;
 const double kEpsilon = 0.005;
 
-enum UseEngine {
-  kODE = 0,
-  kEngineNum
-};
-
 enum TestCase {
   kNormalCase1 = 0,
   kNormalCase2,
@@ -105,31 +107,30 @@ enum TestCase {
   kAbnormalCase5,
 };
 
-class CollisionDetectorTest : public ::testing::Test {
+class CollisionDetectorTestUtil {
  public:
-  virtual ~CollisionDetectorTest() {}
+  virtual ~CollisionDetectorTestUtil() {}
 
  protected:
-  // Operation test for each function
-  bool CreateObject_(TestCase case_no, UseEngine engine);
-  bool DestroyObject_(TestCase case_no, UseEngine engine);
-  bool UseAnchor_(TestCase case_no, UseEngine engine);
+  // Functional test for each function
+  bool CreateObject_(TestCase case_no);
+  bool DestroyObject_(TestCase case_no);
+  bool UseAnchor_(TestCase case_no);
 
-  bool SetObjectTransform_(TestCase case_no, UseEngine engine);
-  bool GetObjectTransform_(TestCase case_no, UseEngine engine);
+  bool SetObjectTransform_(TestCase case_no);
+  bool GetObjectTransform_(TestCase case_no);
 
-  bool ChangeObjectPropertyFunctions_(TestCase case_no, UseEngine engine);
+  bool ChangeObjectPropertyFunctions_(TestCase case_no);
 
-  bool CheckCollision_(enum TestCase case_no, UseEngine engine);
+  bool CheckCollision_(enum TestCase case_no);
   bool CheckCollisionHogeHoge_(enum TestCase case_no,
-                               UseEngine engine,
                                CollisionObjectType typeA,
                                CollisionObjectType typeB);
-  bool CheckCollisionSpace_(enum TestCase case_no, UseEngine engine);
-  bool GetContactPairList_(enum TestCase case_no, UseEngine engine);
-  bool GetClosestObject_(enum TestCase case_no, UseEngine engine);
-  bool RayCasting_(enum TestCase case_no, UseEngine engine);
-  bool CheckCollisionPair(enum TestCase case_no, UseEngine engine);
+  bool CheckCollisionSpace_(enum TestCase case_no);
+  bool GetContactPairList_(enum TestCase case_no);
+  bool GetClosestObject_(enum TestCase case_no);
+  bool RayCasting_(enum TestCase case_no);
+  bool CheckCollisionPair(enum TestCase case_no);
 
   ObjectParameter InitObjectParameter_(const std::string& name,
                                        CollisionObjectType type);
@@ -138,87 +139,96 @@ class CollisionDetectorTest : public ::testing::Test {
                           uint16_t &object_number);
 
   ICollisionDetector::Ptr coldet_;
+  virtual void InitializeCollisionDetector_() = 0;
 };
 
-ObjectParameter CollisionDetectorTest::InitObjectParameter_(
+ObjectParameter CollisionDetectorTestUtil::InitObjectParameter_(
     const std::string& name, CollisionObjectType type) {
   ObjectParameter parameter;
   parameter.name = name;
   parameter.margin = kMargin;
   parameter.shape.type = type;
-  parameter.shape.dimensions.push_back(kPrimParams[0]);
-  parameter.shape.dimensions.push_back(kPrimParams[1]);
-  parameter.shape.dimensions.push_back(kPrimParams[2]);
-  parameter.shape.filename = kSTLCorrectFileName;
+  if (type == kBox) {
+    parameter.shape.dimensions.push_back(kPrimParams[0]);
+    parameter.shape.dimensions.push_back(kPrimParams[1]);
+    parameter.shape.dimensions.push_back(kPrimParams[2]);
+  } else if (type == kSphere) {
+    parameter.shape.dimensions.push_back(kPrimParams[0]);
+  } else if (type == kCapsule) {
+    parameter.shape.dimensions.push_back(kPrimParams[0]);
+    parameter.shape.dimensions.push_back(kPrimParams[1]);
+  } else if (type == kCylinder) {
+    parameter.shape.dimensions.push_back(kPrimParams[0]);
+    parameter.shape.dimensions.push_back(kPrimParams[1]);
+  } else if (type == kMesh) {
+    parameter.shape.filename = kSTLCorrectFileName;
+  } else if (type == kMeshVertices) {
+    std::string dir(__FILE__);
+    dir = dir.substr(0, dir.find_last_of("/"));
+    const auto cylinder_shape = shapes::createMeshFromResource(std::string("file://") + dir + "/cylinder.stl");
+    for (auto i = 0u; i < cylinder_shape->vertex_count; ++i) {
+      parameter.shape.vertices.push_back(Eigen::Vector3f(cylinder_shape->vertices[3 * i],
+                                                         cylinder_shape->vertices[3 * i + 1],
+                                                         cylinder_shape->vertices[3 * i + 2]));
+    }
+    for (auto i = 0u; i < cylinder_shape->triangle_count; ++i) {
+      parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i]);
+      parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i + 1]);
+      parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i + 2]);
+    }
+  }
   parameter.transform.setIdentity();
   parameter.group = 0x0001;
   parameter.filter = 0xFFFF;
 
-  std::string dir(__FILE__);
-  dir = dir.substr(0, dir.find_last_of("/"));
-  const auto cylinder_shape = shapes::createMeshFromResource(std::string("file://") + dir + "/cylinder.stl");
-  for (auto i = 0u; i < cylinder_shape->vertex_count; ++i) {
-    parameter.shape.vertices.push_back(Eigen::Vector3f(cylinder_shape->vertices[3 * i],
-                                                       cylinder_shape->vertices[3 * i + 1],
-                                                       cylinder_shape->vertices[3 * i + 2]));
-  }
-  for (auto i = 0u; i < cylinder_shape->triangle_count; ++i) {
-    parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i]);
-    parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i + 1]);
-    parameter.shape.indices.push_back(cylinder_shape->triangles[3 * i + 2]);
-  }
-
   return parameter;
 }
 
-bool CollisionDetectorTest::CreateObject_(enum TestCase case_no,
-                                          UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
+bool CollisionDetectorTestUtil::CreateObject_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
 
+  ObjectParameter parameter;
   switch (case_no) {
     case kNormalCase1:
-      parameter.shape.type = kSphere;
+      parameter = InitObjectParameter_(kObjectName, kSphere);
       break;
     case kNormalCase2:
+      parameter = InitObjectParameter_(kObjectName, kBox);
       break;
     case kNormalCase3:
-      parameter.shape.type = kCapsule;
+      parameter = InitObjectParameter_(kObjectName, kCapsule);
       break;
     case kNormalCase4:
-      parameter.shape.type = kCylinder;
+      parameter = InitObjectParameter_(kObjectName, kCylinder);
       break;
     case kNormalCase5:
-      parameter.shape.type = kMesh;
+      parameter = InitObjectParameter_(kObjectName, kMesh);
       break;
     case kNormalCase6:
+      parameter = InitObjectParameter_(kObjectName, kBox);
       break;
     case kNormalCase7:
-      parameter.shape.type = kMeshVertices;
+      parameter = InitObjectParameter_(kObjectName, kMeshVertices);
       break;
     case kAbnormalCase1:
+      parameter = InitObjectParameter_(kObjectName, kBox);
       parameter.shape.type = static_cast<CollisionObjectType>(50);
       break;
     case kAbnormalCase2:
-      parameter.shape.type = kMesh;
+      parameter = InitObjectParameter_(kObjectName, kMesh);
       parameter.shape.filename.assign(kSTLNothingFileName);
       break;
     case kAbnormalCase3:
-      parameter.shape.type = kMesh;
+      parameter = InitObjectParameter_(kObjectName, kMesh);
       parameter.shape.filename.assign(kSTLZeroFileName);
       break;
     case kAbnormalCase4:
-      parameter.shape.type = kBox;
+      parameter = InitObjectParameter_(kObjectName, kBox);
       parameter.shape.dimensions.clear();
       break;
     case kAbnormalCase5:
-      parameter.shape.type = kSphere;
-      parameter.shape.dimensions.clear();
-      parameter.shape.dimensions.push_back(-kPrimParams[0]);
+      parameter = InitObjectParameter_(kObjectName, kSphere);
+      parameter.shape.dimensions[0] = -kPrimParams[0];
       break;
     default:
       assert(!"Beyond expectation.");
@@ -226,6 +236,9 @@ bool CollisionDetectorTest::CreateObject_(enum TestCase case_no,
   }
   try {
     coldet_->CreateObject(parameter);
+    // Verify object creation by checking if information can be obtained from the created objects
+    const auto param_from_coldet = coldet_->GetObjectParameter(kObjectName);
+    EXPECT_EQ(param_from_coldet.name, kObjectName);
     coldet_->CheckCollisionSpace();
 #if CREATEOBJECT_CASE6
     if (case_no == kNormalCase6) {
@@ -240,24 +253,20 @@ bool CollisionDetectorTest::CreateObject_(enum TestCase case_no,
 
   return true;
 }
-bool CollisionDetectorTest::DestroyObject_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
+bool CollisionDetectorTestUtil::DestroyObject_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
 
   switch (case_no) {
-    case kNormalCase1:
-      parameter.shape.type = kSphere;
+    case kNormalCase1: {
+      const auto parameter = InitObjectParameter_(kObjectName, kSphere);
       coldet_->CreateObject(parameter);
       break;
-    case kNormalCase2:
-      parameter.shape.type = kMesh;
+    }
+    case kNormalCase2: {
+      const auto parameter = InitObjectParameter_(kObjectName, kMesh);
       coldet_->CreateObject(parameter);
       break;
+    }
     case kAbnormalCase1:
       break;
     default:
@@ -270,53 +279,32 @@ bool CollisionDetectorTest::DestroyObject_(
   } catch (...) {
     return false;
   }
-
+  // Verify object destruction by the inability to obtain object information
+  EXPECT_THROW(coldet_->GetObjectParameter(kObjectName), std::domain_error);
   return true;
 }
-bool CollisionDetectorTest::UseAnchor_(TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
+bool CollisionDetectorTestUtil::UseAnchor_(TestCase case_no) {
+  InitializeCollisionDetector_();
 
   try {
     switch (case_no) {
-      case kNormalCase1:
-        coldet_->CreateObject(parameter);
+      case kNormalCase4: {
+        coldet_->CreateObject(InitObjectParameter_(kObjectName, kBox));
         coldet_->SetAnchor();
-        break;
-      case kNormalCase2:
-        coldet_->CreateObject(parameter);
-        coldet_->SetAnchor(kObjectName);
-        break;
-      case kNormalCase3:
-        coldet_->CreateObject(parameter);
-        coldet_->SetAnchor(kObjectName);
-        coldet_->GetAnchor();
-        break;
-      case kNormalCase4:
-        coldet_->CreateObject(parameter);
-        coldet_->SetAnchor(kObjectName);
-        coldet_->CreateObject(parameter);
-        coldet_->CreateObject(parameter);
+        coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(1), kBox));
         coldet_->DestroyObject();
+
+        const auto param_from_coldet = coldet_->GetObjectParameter(kObjectName);
+        EXPECT_EQ(param_from_coldet.name, kObjectName);
+        EXPECT_THROW(coldet_->GetObjectParameter(kObjectName + std::to_string(1)),
+                     std::domain_error);
         break;
-      case kNormalCase5:
-        coldet_->CreateObject(parameter);
-        coldet_->SetAnchor();
-        coldet_->DestroyObject();
-        break;
-      case kAbnormalCase1:
-        coldet_->GetAnchor();
-        break;
+      }
       case kAbnormalCase2:
         coldet_->SetAnchor();
         break;
       case kAbnormalCase3:
-        coldet_->CreateObject(parameter);
-        coldet_->CreateObject(parameter);
+        coldet_->CreateObject(InitObjectParameter_(kObjectName, kBox));
         coldet_->DestroyObject();
         break;
       default:
@@ -330,13 +318,8 @@ bool CollisionDetectorTest::UseAnchor_(TestCase case_no, UseEngine engine) {
 
   return true;
 }
-bool CollisionDetectorTest::SetObjectTransform_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::SetObjectTransform_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
 
   Eigen::Affine3d transform;
@@ -363,13 +346,8 @@ bool CollisionDetectorTest::SetObjectTransform_(
 
   return true;
 }
-bool CollisionDetectorTest::GetObjectTransform_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::GetObjectTransform_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
 
   Eigen::Affine3d transform;
@@ -404,17 +382,24 @@ bool CollisionDetectorTest::GetObjectTransform_(
     return false;
   }
 }
-bool CollisionDetectorTest::ChangeObjectPropertyFunctions_(
-    TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::ChangeObjectPropertyFunctions_(TestCase case_no) {
+  InitializeCollisionDetector_();
   uint16_t parameter = 1;
 
   try {
     switch (case_no) {
+      case kNormalCase1:
+        coldet_->CreateObject(InitObjectParameter_(kObjectName, kBox));
+        EXPECT_EQ(coldet_->GetCollisionGroup(kObjectName), 0x0001);
+        coldet_->SetCollisionGroup(2, kObjectName);
+        EXPECT_EQ(coldet_->GetCollisionGroup(kObjectName), 0x0002);
+        break;
+      case kNormalCase2:
+        coldet_->CreateObject(InitObjectParameter_(kObjectName, kBox));
+        EXPECT_EQ(coldet_->GetCollisionFilter(kObjectName), 0xFFFF);
+        coldet_->SetCollisionFilter(0xFFFE, kObjectName);
+        EXPECT_EQ(coldet_->GetCollisionFilter(kObjectName), 0xFFFE);
+        break;
       case kAbnormalCase1:
         coldet_->SetCollisionGroup(parameter, kObjectName);
         break;
@@ -439,13 +424,8 @@ bool CollisionDetectorTest::ChangeObjectPropertyFunctions_(
   return true;
 }
 
-bool CollisionDetectorTest::CheckCollision_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::CheckCollision_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kBox);
   coldet_->CreateObject(parameter);
 
@@ -468,58 +448,35 @@ bool CollisionDetectorTest::CheckCollision_(
   return true;
 }
 
-bool CollisionDetectorTest::CheckCollisionHogeHoge_(
+bool CollisionDetectorTestUtil::CheckCollisionHogeHoge_(
     enum TestCase case_no,
-    UseEngine engine,
     CollisionObjectType typeA,
     CollisionObjectType typeB) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
+  InitializeCollisionDetector_();
 
   // Sphere
-  parameter.name = kObjectName + std::to_string(0);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(6);
-  coldet_->CreateObject(parameter);
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(0), kSphere));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(6), kSphere));
 
   // Box
-  parameter.shape.type = kBox;
-  parameter.name = kObjectName + std::to_string(1);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(7);
-  coldet_->CreateObject(parameter);
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(1), kBox));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(7), kBox));
 
   // Capsule
-  parameter.shape.type = kCapsule;
-  parameter.name = kObjectName + std::to_string(2);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(8);
-  coldet_->CreateObject(parameter);
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(2), kCapsule));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(8), kCapsule));
 
   // Cylinder
-  parameter.shape.type = kCylinder;
-  parameter.name = kObjectName + std::to_string(3);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(9);
-  coldet_->CreateObject(parameter);
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(3), kCylinder));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(9), kCylinder));
 
-  // Nesh
-  parameter.shape.type = kMesh;
-  parameter.name = kObjectName + std::to_string(4);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(10);
-  coldet_->CreateObject(parameter);
+  // Mesh
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(4), kMesh));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(10), kMesh));
 
-  // Mesh (vertex specification)
-  parameter.shape.type = kMeshVertices;
-  parameter.name = kObjectName + std::to_string(5);
-  coldet_->CreateObject(parameter);
-  parameter.name = kObjectName + std::to_string(11);
-  coldet_->CreateObject(parameter);
+  // Mesh (vertex specified)
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(5), kMeshVertices));
+  coldet_->CreateObject(InitObjectParameter_(kObjectName + std::to_string(11), kMeshVertices));
 
   Eigen::Vector3d translation(0.0, 0.0, 0.0);
   uint16_t object_number[2] = {0, 0};
@@ -579,36 +536,16 @@ bool CollisionDetectorTest::CheckCollisionHogeHoge_(
 
   coldet_->SetObjectTransform(object_transform, hogeA_name);
 
-  if (engine == kODE) {
-    bool coldet_result = coldet_->CheckCollisionPair(hogeA_name, hogeB_name);
-    if (coldet_result == expect_result) {
-      return true;
-    }
-  } else {
-    ClosestResult closest_result;
-    closest_result = coldet_->GetClosestResult(hogeA_name, hogeB_name);
-    if (closest_result.contact) {
-      if (expect_result) {
-        return true;
-      }
-    } else {
-      if ((!expect_result) &&
-          (fabs(closest_result.distance - kMargin) < kEpsilon)) {
-        return true;
-      }
-    }
+  bool coldet_result = coldet_->CheckCollisionPair(hogeA_name, hogeB_name);
+  if (coldet_result == expect_result) {
+    return true;
   }
 
   return false;
 }
-bool CollisionDetectorTest::CheckCollisionSpace_(
-    enum TestCase case_no, UseEngine engine) {
+bool CollisionDetectorTestUtil::CheckCollisionSpace_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
 
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
   for (int32_t i = 0; i < 4; i++) {
     parameter.name = "sphere" + std::to_string(i);
@@ -691,13 +628,8 @@ bool CollisionDetectorTest::CheckCollisionSpace_(
 
   return false;
 }
-bool CollisionDetectorTest::GetContactPairList_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::GetContactPairList_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
 
   for (int32_t i = 0; i < 4; i++) {
@@ -790,13 +722,8 @@ bool CollisionDetectorTest::GetContactPairList_(
   }
   return false;
 }
-bool CollisionDetectorTest::GetClosestObject_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::GetClosestObject_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
   ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
 
   for (int32_t i = 0; i < 6; i++) {
@@ -871,53 +798,61 @@ bool CollisionDetectorTest::GetClosestObject_(
   }
   return true;
 }
-bool CollisionDetectorTest::RayCasting_(
-    enum TestCase case_no, UseEngine engine) {
-  if (engine == kODE) {
-    coldet_ = ICollisionDetector::Ptr(new ODECollisionDetector());
-  } else {
-    throw;
-  }
+bool CollisionDetectorTestUtil::RayCasting_(enum TestCase case_no) {
+  InitializeCollisionDetector_();
 
   Eigen::Vector3d start_point(Eigen::Vector3d::Zero());
   Eigen::Vector3d direction(Eigen::Vector3d::Random());
   direction.normalize();
   double length = 1.0;
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
-  parameter.transform.translation() = direction;
 
   bool expect_result = true;
 
+  ObjectParameter parameter;
   switch (case_no) {
     case kNormalCase1:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
+      parameter.transform.translation() = direction;
       break;
     case kNormalCase2:
-      parameter.shape.type = kBox;
+      parameter = InitObjectParameter_(kObjectName, kBox);
+      parameter.transform.translation() = direction;
       break;
     case kNormalCase3:
-      parameter.shape.type = kCapsule;
+      parameter = InitObjectParameter_(kObjectName, kCapsule);
+      parameter.transform.translation() = direction;
       break;
     case kNormalCase4:
-      parameter.shape.type = kCylinder;
+      parameter = InitObjectParameter_(kObjectName, kCylinder);
+      parameter.transform.translation() = direction;
       break;
     case kNormalCase5:
-      parameter.shape.type = kMesh;
+      parameter = InitObjectParameter_(kObjectName, kMesh);
+      parameter.transform.translation() = direction;
       break;
     case kNormalCase6:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
       parameter.transform.translation() = direction * (-1.0);
       expect_result = false;
       break;
     case kNormalCase7:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
       parameter.transform.translation() = direction * 5.0;
       expect_result = false;
       break;
     case kNormalCase8:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
+      parameter.transform.translation() = direction;
       expect_result = false;
       break;
     case kAbnormalCase1:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
+      parameter.transform.translation() = direction;
       direction.setZero(3);
       break;
     case kAbnormalCase2:
+      parameter = InitObjectParameter_(kObjectName, kSphere);
+      parameter.transform.translation() = direction;
       length = 0.0;
       break;
     default:
@@ -944,7 +879,7 @@ bool CollisionDetectorTest::RayCasting_(
   }
 }
 
-void CollisionDetectorTest::SetObjectDistance_(
+void CollisionDetectorTestUtil::SetObjectDistance_(
     CollisionObjectType type,
     Eigen::Vector3d& transform,
     uint16_t &object_number) {
@@ -987,417 +922,425 @@ void CollisionDetectorTest::SetObjectDistance_(
   }
 }
 
-TEST_F(CollisionDetectorTest, CreateObject) {
-  // Knormalcase1: Make a ball
-  // Knormalcase2: Make a box
-  // Knormalcase3: Make a capsule
-  // Knormalcase4: Make cylinder
-  // Knormalcase5: Make a mesh
-  // Knormalcase6: Make 10,000 boxes
-  // Knormalcase7: Make a mesh (vertex specification)
+template<typename CollisionDetectorType>
+class CollisionDetectorTest : public ::testing::Test, public CollisionDetectorTestUtil {
+ protected:
+  void InitializeCollisionDetector_() override {
+    coldet_ = std::make_shared<CollisionDetectorType>();
+  }
+};
 
-  // Kabnormalcase1: Type is fraudulent
-  // Kabnormalcase2: No STL file
-  // Kabnormalcase3: STL file is empty
-  // Kabnormalcase4: There is no box parameter
-  // Kabnormalcase5: Sphere parameters are negative
-  EXPECT_TRUE(CreateObject_(kNormalCase1, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase2, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase3, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase4, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase5, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase6, kODE));
-  EXPECT_TRUE(CreateObject_(kNormalCase7, kODE));
-  EXPECT_FALSE(CreateObject_(kAbnormalCase1, kODE));
-  EXPECT_FALSE(CreateObject_(kAbnormalCase2, kODE));
-  EXPECT_FALSE(CreateObject_(kAbnormalCase3, kODE));
-  EXPECT_FALSE(CreateObject_(kAbnormalCase4, kODE));
-  EXPECT_FALSE(CreateObject_(kAbnormalCase5, kODE));
-}
-TEST_F(CollisionDetectorTest, DestroyObject) {
-  // Knormalcase1: Create and discard primitive
-  // Knormalcase2: Mesh and discard
-  // Kabnormalcase1: Discard an object that has not made anything
-  EXPECT_TRUE(DestroyObject_(kNormalCase1, kODE));
-  EXPECT_TRUE(DestroyObject_(kNormalCase2, kODE));
-  EXPECT_FALSE(DestroyObject_(kAbnormalCase1, kODE));
-}
-TEST_F(CollisionDetectorTest, UseAnchor) {
-  // Knormalcase1: Create a primitive and set the end in an anchor
-  // Knormalcase2: Create a primitive and set the primitive made in an anchor
-  // Knormalcase3: Set the primitive made into the anchor and then get the anchor's name
-  // Knormalcase4: Set the primitive made into the anchor and then discard the object using the anchor
-  // Knormalcase5: Use the anchor to discard the object using an anchor
-  // Kabnormalcase1: Get the name without setting an anchor
-  // Kabnormalcase2: Anchor set without primitive
-  // Kabnormalcase3: Discard the object using an anchor without setting an anchor
+using Implementations = ::testing::Types<ODECollisionDetector, FclCollisionDetector>;
+TYPED_TEST_SUITE(CollisionDetectorTest, Implementations);
 
-  EXPECT_TRUE(UseAnchor_(kNormalCase1, kODE));
-  EXPECT_TRUE(UseAnchor_(kNormalCase2, kODE));
-  EXPECT_TRUE(UseAnchor_(kNormalCase3, kODE));
-  EXPECT_TRUE(UseAnchor_(kNormalCase4, kODE));
-  EXPECT_TRUE(UseAnchor_(kNormalCase5, kODE));
-  EXPECT_FALSE(UseAnchor_(kAbnormalCase1, kODE));
-  EXPECT_FALSE(UseAnchor_(kAbnormalCase2, kODE));
-  EXPECT_FALSE(UseAnchor_(kAbnormalCase3, kODE));
+TYPED_TEST(CollisionDetectorTest, CreateObject) {
+  // kNormalCase1: Create a sphere
+  // kNormalCase2: Create a box
+  // kNormalCase3: Create a capsule
+  // kNormalCase4: Create a cylinder
+  // kNormalCase5: Create a mesh
+  // kNormalCase6: Create 10000 boxes
+  // kNormalCase7: Create a mesh (vertex specified)
+
+  // kAbnormalCase1: Invalid type
+  // kAbnormalCase2: STL file does not exist
+  // kAbnormalCase3: STL file is empty
+  // kAbnormalCase4: Box parameters do not exist
+  // kAbnormalCase5: Sphere parameter is negative
+  EXPECT_TRUE(this->CreateObject_(kNormalCase1));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase2));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase3));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase4));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase5));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase6));
+  EXPECT_TRUE(this->CreateObject_(kNormalCase7));
+  EXPECT_FALSE(this->CreateObject_(kAbnormalCase1));
+  EXPECT_FALSE(this->CreateObject_(kAbnormalCase2));
+  EXPECT_FALSE(this->CreateObject_(kAbnormalCase3));
+  EXPECT_FALSE(this->CreateObject_(kAbnormalCase4));
+  EXPECT_FALSE(this->CreateObject_(kAbnormalCase5));
 }
 
-TEST_F(CollisionDetectorTest, SetObjectTransformODE) {
-  // knormalcase1: Normal system
-  // Kabnormalcase1: Set coordinates on untable objects
-  EXPECT_TRUE(SetObjectTransform_(kNormalCase1, kODE));
-  EXPECT_FALSE(SetObjectTransform_(kAbnormalCase1, kODE));
+TYPED_TEST(CollisionDetectorTest, DestroyObject) {
+  // kNormalCase1: Create and destroy a primitive
+  // kNormalCase2: Create and destroy a mesh
+  // kAbnormalCase1: Destroy an object that was not created
+  EXPECT_TRUE(this->DestroyObject_(kNormalCase1));
+  EXPECT_TRUE(this->DestroyObject_(kNormalCase2));
+  EXPECT_FALSE(this->DestroyObject_(kAbnormalCase1));
 }
 
-TEST_F(CollisionDetectorTest, GetObjectTransform) {
-  // knormalcase1: Normal system
-  // Kabnormalcase1: Get the coordinates of untouched objects
+TYPED_TEST(CollisionDetectorTest, UseAnchor) {
+  // kNormalCase4: Set the created primitive as an anchor and use the anchor to destroy the object
+  // kAbnormalCase2: Set anchor without creating a primitive
+  // kAbnormalCase3: Use anchor to destroy object without setting anchor
 
-  EXPECT_TRUE(GetObjectTransform_(kNormalCase1, kODE));
-  EXPECT_FALSE(GetObjectTransform_(kAbnormalCase1, kODE));
+  EXPECT_TRUE(this->UseAnchor_(kNormalCase4));
+  EXPECT_FALSE(this->UseAnchor_(kAbnormalCase2));
+  EXPECT_FALSE(this->UseAnchor_(kAbnormalCase3));
 }
 
-TEST_F(CollisionDetectorTest, ChangeObjectPropertyFunctions) {
-  // Category Filter set, Fail Test for enabled / invalid functions
-  // KabnormalCase1: SetCollisionGroup () in untouched objects ()
-  // Kabnormalcase2: SetCollisionfilter () in untouched objects ()
-  // Kabnormalcase3: ENABLEOBJECT () with an untouched object ()
-  // Kabnormalcase4: DisableObject () with an untouched object ()
+TYPED_TEST(CollisionDetectorTest, SetObjectTransform) {
+  // kNormalCase1: Normal case
+  // kAbnormalCase1: Set coordinates for an object not created
+  EXPECT_TRUE(this->SetObjectTransform_(kNormalCase1));
+  EXPECT_FALSE(this->SetObjectTransform_(kAbnormalCase1));
+}
 
-  EXPECT_FALSE(ChangeObjectPropertyFunctions_(kAbnormalCase1, kODE));
-  EXPECT_FALSE(ChangeObjectPropertyFunctions_(kAbnormalCase2, kODE));
-  EXPECT_FALSE(ChangeObjectPropertyFunctions_(kAbnormalCase3, kODE));
-  EXPECT_FALSE(ChangeObjectPropertyFunctions_(kAbnormalCase4, kODE));
-}
-TEST_F(CollisionDetectorTest, CheckCollision) {
-  // Kabnormalcase1: Interference check with untouched objects
-  // Kabnormalcase2: Interference check with untouched objects
+TYPED_TEST(CollisionDetectorTest, GetObjectTransform) {
+  // kNormalCase1: Normal case
+  // kAbnormalCase1: Get coordinates of an object not created
 
-  EXPECT_FALSE(CheckCollision_(kAbnormalCase1, kODE));
-  EXPECT_FALSE(CheckCollision_(kAbnormalCase2, kODE));
+  EXPECT_TRUE(this->GetObjectTransform_(kNormalCase1));
+  EXPECT_FALSE(this->GetObjectTransform_(kAbnormalCase1));
 }
-// Testing whether the result of the interference check matches the expected value
-// The distance between the two objects is
-// 1. X -axis direction, contact distance + kmargin * 3 (not in contact
-// 2. X -axis direction, contact distance + kmargin (ODE does not contact
-// 3. X -axial direction, contact distance -kmargin (contact)
-// 4. Y -axis direction, contact distance + kmargin * 3 (not contact
-// 5. Y -axis direction, contact distance + kmargin (ODE does not contact
-// 6. Y -axis direction, contact distance -kmargin (contact)
-// 7. Z axial direction, contact distance + kmargin * 3 (not contact
-// 8. Z axial direction, contact distance + kmargin (ODE does not contact
-// 9. Z -axial direction, contact distance -kmargin (contact)
-// It is.
-TEST_F(CollisionDetectorTest, ColDetSphereSphere) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kSphere));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kSphere));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kSphere));
-}
-TEST_F(CollisionDetectorTest, ColDetSphereBox) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kSphere, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kSphere, kBox));
-}
-TEST_F(CollisionDetectorTest, ColDetSphereCapsule) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kSphere, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kSphere, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kSphere, kCapsule));
-}
-TEST_F(CollisionDetectorTest, ColDetSphereCylinder) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kSphere, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kSphere, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kSphere, kCylinder));
-}
-TEST_F(CollisionDetectorTest, ColDetSphereMesh) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kSphere, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kSphere, kMesh));
-}
-TEST_F(CollisionDetectorTest, ColDetSphereMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kSphere, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kSphere, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, ColDetBoxBox) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kBox, kBox));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kBox, kBox));
-}
-TEST_F(CollisionDetectorTest, ColDetBoxCapsule) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kBox, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kBox, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kBox, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kBox, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kBox, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kBox, kCapsule));
-}
-TEST_F(CollisionDetectorTest, ColDetBoxCylinder) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kBox, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kBox, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kBox, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kBox, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kBox, kCylinder));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kBox, kCylinder));
-}
-TEST_F(CollisionDetectorTest, ColDetBoxMesh) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kBox, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kBox, kMesh));
-}
-TEST_F(CollisionDetectorTest, ColDetBoxMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kBox, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kBox, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, ColDetCapsuleCapsule) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kCapsule, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kCapsule, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kCapsule, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kCapsule, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kCapsule, kCapsule));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kCapsule, kCapsule));
-}
-TEST_F(CollisionDetectorTest, ColDetCapsuleCylinder) {
-  // In ODE, CPASULE and CYLINDER do not interfere because they do not interfere
-}
-TEST_F(CollisionDetectorTest, ColDetCapsuleMesh) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kCapsule, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kCapsule, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kCapsule, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kCapsule, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kCapsule, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kCapsule, kMesh));
-}
-TEST_F(CollisionDetectorTest, ColDetCapsuleMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kCapsule, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kCapsule, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kCapsule, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kCapsule, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kCapsule, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kCapsule, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, ColDetCylinderCylinder) {
-  // In ODE, Cylinder does not test because it has a specification that does not interfere with each other.
-}
-TEST_F(CollisionDetectorTest, ColDetCylinderMesh) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kCylinder, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kCylinder, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kCylinder, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kCylinder, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kCylinder, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kCylinder, kMesh));
-}
-TEST_F(CollisionDetectorTest, ColDetCylinderMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kCylinder, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kCylinder, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kCylinder, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kCylinder, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kCylinder, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kCylinder, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, ColDetMeshMesh) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kMesh, kMesh));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kMesh, kMesh));
-}
-TEST_F(CollisionDetectorTest, ColDetMeshMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kMesh, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kMesh, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, ColDetMeshVerticesMeshVertices) {
-  // ODE
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase1, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase2, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase3, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase4, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase5, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase6, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase7, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase8, kODE, kMeshVertices, kMeshVertices));
-  EXPECT_TRUE(CheckCollisionHogeHoge_(kNormalCase9, kODE, kMeshVertices, kMeshVertices));
-}
-TEST_F(CollisionDetectorTest, CheckCollisionSpace) {
-  // Initial setting:
-  // Place 4 balls with radius R and so that the center is on the XY plane
-  // All set for different groups
-  // Don't interfere with your group
-  // The center of the ball 1 (0, 0)
-  // The center of the ball 2 (3*R, 0)
-  // The center of the ball 3 (0, -1.5*r)
-  // The center of ball 4 (0, 1.5*R)
-  // Knormalcase1: Do not mess with any settings and interfere
-  // Knormalcase2: Disable ball 1 and do not interfere
-  // Knormalcase3: Disable the ball 1, enable and interfere
-  // Knormalcase4: Change the group and filter in the ball 1 the same as the ball 3, interfere
-  // Knormalcase5: Change the group and filter with a ball 1,4 the same as the ball 3, do not interfere
-  // Knormalcase6: Discard the ball 1,2,3,4, do not interfere
-  // Knormalcase7: Extract and do not interfere with ball 1 and ball 4, ball 1 and ball 3 from interference checks
-  // Knormalcase8: Ball 1 and ball 4, ball 1 and ball 3 are excluded from interference checks, then destroy the exclusion list and interfere
-  // Knormalcase9: The group and filter of the ball 1,4 are the same as the ball 3, add to the interference check pair and interfere
 
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase1, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase2, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase3, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase4, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase5, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase6, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase7, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase8, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase9, kODE));
-  EXPECT_TRUE(CheckCollisionSpace_(kNormalCase10, kODE));
-}
-TEST_F(CollisionDetectorTest, GetContactPairList) {
-  // Initial setting:
-  // Place 4 balls with radius R and so that the center is on the XY plane
-  // All set for different groups
-  // Don't interfere with your group
-  // The center of the ball 1 (0, 0)
-  // The center of the ball 2 (3*R, 0)
-  // The center of the ball 3 (0, -1.5*r)
-  // The center of ball 4 (0, 1.5*R)
-  // Knormalcase1: Nothing to configure, interfere (2 places)
-  // Knormalcase2: Disable ball 1 and do not interfere
-  // Knormalcase3: After disabling the ball 1, enable and interfere (2 places)
-  // Knormalcase4: Change the group and filter of the ball 1 the same as the ball 3, interfere (1 place)
-  // Knormalcase5: Change the group and filter with a ball 1,4 the same as the ball 3, do not interfere
-  // Knormalcase6: Discard the ball 1,2,3,4, do not interfere
-  // Knormalcase7: Extract and do not interfere with ball 1 and ball 4, ball 1 and ball 3 from interference checks
-  // Knormalcase8: A ball 1 and the ball 4, the ball 1 and the ball 3 are excluded from the interference check, and the check of the ball 1 and the ball 3 is enabled and interfered.
-  // Knormalcase9: Ball 1 and ball 4, ball 1 and ball 3 are excluded from interference checks, then destroy the exclusion list and interfere
-  // Knormalcase10: The group of balls 1,4 is the same as the ball 3, add to the interference check pair and interfere
+TYPED_TEST(CollisionDetectorTest, ChangeObjectPropertyFunctions) {
+  // Fail test for setting category/filter and enabling/disabling object functions
+  // kNormalCase1: Normal case for Set/GetCollisionGroup
+  // kNormalCase2: Normal case for Set/GetCollisionFilter
+  // kAbnormalCase1: SetCollisionGroup() for an object not created
+  // kAbnormalCase2: SetCollisionFilter() for an object not created
+  // kAbnormalCase3: EnableObject() for an object not created
+  // kAbnormalCase4: DisableObject() for an object not created
 
-  EXPECT_TRUE(GetContactPairList_(kNormalCase1, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase2, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase3, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase4, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase5, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase6, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase7, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase8, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase9, kODE));
-  EXPECT_TRUE(GetContactPairList_(kNormalCase10, kODE));
+  EXPECT_TRUE(this->ChangeObjectPropertyFunctions_(kNormalCase1));
+  EXPECT_TRUE(this->ChangeObjectPropertyFunctions_(kNormalCase2));
+  EXPECT_FALSE(this->ChangeObjectPropertyFunctions_(kAbnormalCase1));
+  EXPECT_FALSE(this->ChangeObjectPropertyFunctions_(kAbnormalCase2));
+  EXPECT_FALSE(this->ChangeObjectPropertyFunctions_(kAbnormalCase3));
+  EXPECT_FALSE(this->ChangeObjectPropertyFunctions_(kAbnormalCase4));
 }
-TEST_F(CollisionDetectorTest, GetClosestObject) {
-  // Initial setting:
-  // Place the radius R ball as the center is on the XY plane
-  // Conducted with a ball 1 and filter 100
-  // Ball 1: Central (0, 0) Category 001 Filter 100
-  // Ball 2: Central (3 * R, 0) Category 010 Filter 100
-  // Ball 3: Central (-4 * R, 0) Category 100 filter 011
-  // Ball 4: Central (-4 * R, 2 * R) Category 100 filter 011
-  // Ball 5: Central (-4 * R, 4 * R) Category 100 filter 011
-  // Ball 6: Central (10 * R, 2 * R) Category 100 filter 011
 
-  // Knormalcase1: Top 3, Extended 5*R → Ball 3
-  // Knormalcase2: Disable ball 3 Top 3, extended 5*R → Ball 4
-  // Knormalcase3: Top 3, extension 0.5 * R → Not found
-  // Knormalcase4: Disable ball 3,4,5 Top 3, extension 5*R → Not found
-  // Knormalcase5: Top 1, Extended 5*R → I hope something is found, Sphere3
-  // Knormalcase6: Running after disabling the ball 1 → not doing anything
+TYPED_TEST(CollisionDetectorTest, CheckCollision) {
+  // kAbnormalCase1: Interference check for an object not created
+  // kAbnormalCase2: Interference check for an object not created
+
+  EXPECT_FALSE(this->CheckCollision_(kAbnormalCase1));
+  EXPECT_FALSE(this->CheckCollision_(kAbnormalCase2));
+}
+
+// Test if the result of the interference check matches the expected value
+// The distance between two objects
+// 1. X-axis direction, contact distance + kMargin * 3 (no contact)
+// 2. X-axis direction, contact distance + kMargin (no contact)
+// 3. X-axis direction, contact distance - kMargin (contact)
+// 4. Y-axis direction, contact distance + kMargin * 3 (no contact)
+// 5. Y-axis direction, contact distance + kMargin (no contact)
+// 6. Y-axis direction, contact distance - kMargin (contact)
+// 7. Z-axis direction, contact distance + kMargin * 3 (no contact)
+// 8. Z-axis direction, contact distance + kMargin (no contact)
+// 9. Z-axis direction, contact distance - kMargin (contact)
+// Is as follows.
+TYPED_TEST(CollisionDetectorTest, ColDetSphereSphere) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kSphere));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kSphere));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kSphere));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetSphereBox) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kSphere, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kSphere, kBox));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetSphereCapsule) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kSphere, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kSphere, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kSphere, kCapsule));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetSphereCylinder) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kSphere, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kSphere, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kSphere, kCylinder));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetSphereMesh) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kSphere, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kSphere, kMesh));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetSphereMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kSphere, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kSphere, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetBoxBox) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kBox, kBox));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kBox, kBox));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetBoxCapsule) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kBox, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kBox, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kBox, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kBox, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kBox, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kBox, kCapsule));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetBoxCylinder) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kBox, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kBox, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kBox, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kBox, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kBox, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kBox, kCylinder));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetBoxMesh) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kBox, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kBox, kMesh));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetBoxMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kBox, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kBox, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCapsuleCapsule) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCapsule, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCapsule, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCapsule, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCapsule, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCapsule, kCapsule));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCapsule, kCapsule));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCapsuleCylinder) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCapsule, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCapsule, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCapsule, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCapsule, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCapsule, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCapsule, kCylinder));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCapsuleMesh) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCapsule, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCapsule, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCapsule, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCapsule, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCapsule, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCapsule, kMesh));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCapsuleMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCapsule, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCapsule, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCapsule, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCapsule, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCapsule, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCapsule, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCylinderCylinder) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCylinder, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCylinder, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCylinder, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCylinder, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCylinder, kCylinder));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCylinder, kCylinder));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCylinderMesh) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCylinder, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCylinder, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCylinder, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCylinder, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCylinder, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCylinder, kMesh));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetCylinderMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kCylinder, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kCylinder, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kCylinder, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kCylinder, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kCylinder, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kCylinder, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetMeshMesh) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kMesh, kMesh));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kMesh, kMesh));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetMeshMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kMesh, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kMesh, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, ColDetMeshVerticesMeshVertices) {
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase3, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase4, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase5, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase6, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase7, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase8, kMeshVertices, kMeshVertices));
+  EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kMeshVertices, kMeshVertices));
+}
+TYPED_TEST(CollisionDetectorTest, CheckCollisionSpace) {
+  // Initial setup:
+  // Arrange four spheres of radius r such that their centers are on the xy-plane
+  // Set all to different groups
+  // No interference with own group
+  // Sphere 1 center (0, 0)
+  // Sphere 2 center (3*r, 0)
+  // Sphere 3 center (0, -1.5*r)
+  // Sphere 4 center (0, 1.5*r)
+  // kNormalCase1: Do not alter any settings, interference will occur
+  // kNormalCase2: Disable sphere 1, no interference
+  // kNormalCase3: After disabling sphere 1, enable it again, interference will occur
+  // kNormalCase4: Set the group and filter of sphere 1 the same as sphere 3, interference will occur
+  // kNormalCase5: Set the group and filter of spheres 1 and 4 the same as sphere 3, no interference
+  // kNormalCase6: Destroy spheres 1, 2, 3, 4, no interference
+  // kNormalCase7: Exclude sphere 1 and 4, sphere 1 and 3 from interference check, no interference
+  // kNormalCase8: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, discard exclusion list, interference will occur
+  // kNormalCase9: Set the group and filter of spheres 1, 4 the same as sphere 3 and add to interference check pair, interference will occur
+
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase1));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase2));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase3));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase4));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase5));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase6));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase7));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase8));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase9));
+  EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase10));
+}
+TYPED_TEST(CollisionDetectorTest, GetContactPairList) {
+  // Initial setup:
+  // Arrange four spheres of radius r such that their centers are on the xy-plane
+  // Set all to different groups
+  // No interference with own group
+  // Sphere 1 center (0, 0)
+  // Sphere 2 center (3*r, 0)
+  // Sphere 3 center (0, -1.5*r)
+  // Sphere 4 center (0, 1.5*r)
+  // kNormalCase1: Do not alter any settings, interference occurs (2 locations)
+  // kNormalCase2: Disable sphere 1, no interference
+  // kNormalCase3: After disabling sphere 1, enable it again, interference occurs (2 locations)
+  // kNormalCase4: Set the group and filter of sphere 1 the same as sphere 3, interference occurs (1 location)
+  // kNormalCase5: Set the group and filter of spheres 1, 4 the same as sphere 3, no interference
+  // kNormalCase6: Destroy spheres 1, 2, 3, 4, no interference
+  // kNormalCase7: Exclude sphere 1 and 4, sphere 1 and 3 from interference check, no interference
+  // kNormalCase8: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, enable check for sphere 1 and 3, interference occurs
+  // kNormalCase9: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, discard exclusion list, interference occurs
+  // kNormalCase10: Set the group and filter of spheres 1, 4 the same as sphere 3 and add to interference check pair, interference occurs
+
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase1));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase2));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase3));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase4));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase5));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase6));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase7));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase8));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase9));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase10));
+}
+TYPED_TEST(CollisionDetectorTest, GetClosestObject) {
+  // Initial setup:
+  // Arrange a sphere of radius r such that its center is on the xy-plane
+  // Execute with sphere 1, filter 100
+  // Sphere 1: Center (0, 0) Category 001 Filter 100
+  // Sphere 2: Center (3 * r, 0) Category 010 Filter 100
+  // Sphere 3: Center (- 4 * r, 0) Category 100 Filter 011
+  // Sphere 4: Center (- 4 * r, 2 * r) Category 100 Filter 011
+  // Sphere 5: Center (- 4 * r, 4 * r) Category 100 Filter 011
+  // Sphere 6: Center (10 * r, 2 * r) Category 100 Filter 011
+
+  // ５
+  // ４            ６
+  // ３　１ ２
+
+  // kNormalCase1: Top 3, expansion 5*r → Sphere 3
+  // kNormalCase2: Disable sphere 3, top 3, expansion 5*r → Sphere 4
+  // kNormalCase3: Top 3, expansion 0.5 * r → Not found
+  // kNormalCase4: Disable spheres 3, 4, 5, top 3, expansion 5*r → Not found
+  // kNormalCase5: Top 1, expansion 5*r → Something is found, hopefully sphere 3
+  // kNormalCase6: Execute after disabling sphere 1 → Do nothing
   // kAbnormalCase1: top 0
-  // Kabnormalcase2: Extended 0
-  // Kabnormalcase3: Filter 0
-  // Kabnormalcase4: Discard the ball 1 and execute it
+  // kAbnormalCase2: Expansion 0
+  // kAbnormalCase3: Filter 0
+  // kAbnormalCase4: Execute after destroying sphere 1
 
-  EXPECT_FALSE(GetClosestObject_(kNormalCase1, kODE));
+  EXPECT_FALSE(this->GetClosestObject_(kNormalCase1));
 }
-TEST_F(CollisionDetectorTest, RayCasting) {
-  // Knormalcase1: For balls
-  // Knormalcase2: For boxes
-  // Knormalcase3: Capsules
-  // Knormalcase4: For cylinders
-  // Knormalcase5: For mesh
-  // Knormalcase6: There is no object in the direction of Ray
-  // Knormalcase7: There is an object in the direction of Ray but it is far away
-  // Knormalcase8: Disable objects
 
-  EXPECT_TRUE(RayCasting_(kNormalCase1, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase2, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase3, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase5, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase6, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase7, kODE));
-  EXPECT_TRUE(RayCasting_(kNormalCase8, kODE));
-  EXPECT_FALSE(RayCasting_(kAbnormalCase1, kODE));
-  EXPECT_FALSE(RayCasting_(kAbnormalCase2, kODE));
+class ODECollisionDetectorTest : public CollisionDetectorTest<ODECollisionDetector> {};
+
+TEST_F(ODECollisionDetectorTest, RayCasting) {
+  // kNormalCase1: Target sphere
+  // kNormalCase2: Target box
+  // kNormalCase3: Target capsule
+  // kNormalCase4: Target cylinder
+  // kNormalCase5: Target mesh
+  // kNormalCase6: No object in the direction of the ray
+  // kNormalCase7: Object exists in the direction of the ray, but far
+  // kNormalCase8: Disable object
+
+  EXPECT_TRUE(RayCasting_(kNormalCase1));
+  EXPECT_TRUE(RayCasting_(kNormalCase2));
+  EXPECT_TRUE(RayCasting_(kNormalCase3));
+  EXPECT_TRUE(RayCasting_(kNormalCase5));
+  EXPECT_TRUE(RayCasting_(kNormalCase6));
+  EXPECT_TRUE(RayCasting_(kNormalCase7));
+  EXPECT_TRUE(RayCasting_(kNormalCase8));
+  EXPECT_FALSE(RayCasting_(kAbnormalCase1));
+  EXPECT_FALSE(RayCasting_(kAbnormalCase2));
 }
-TEST_F(CollisionDetectorTest, GetMeshObjectParameter) {
-  EXPECT_TRUE(CreateObject_(kNormalCase5, kODE));
+
+TEST_F(ODECollisionDetectorTest, GetMeshObjectParameter) {
+  EXPECT_TRUE(CreateObject_(kNormalCase5));
   const auto param = coldet_->GetObjectParameter(kObjectName);
-  // Cylinder.stl is the vertex 50, surface 96
+  // cylinder.stl has 50 vertices, 96 faces
   EXPECT_EQ(param.shape.vertices.size(), 50);
   EXPECT_EQ(param.shape.indices.size(), 96 * 3);
 }

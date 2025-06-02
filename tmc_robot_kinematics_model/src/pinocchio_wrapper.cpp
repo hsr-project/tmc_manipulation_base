@@ -66,15 +66,15 @@ void PinocchioWrapper::Initialize(const std::string& robot_description) {
   try {
     pinocchio::urdf::buildModelFromXML(robot_description, model_);
   } catch(std::invalid_argument& e) {
-    // It seems useless to catch and throw it again, but it can't be helped because of the consistency with the existing test.
+    // It feels wasteful to catch and rethrow, but for consistency with existing tests, it can't be helped
     throw PinocchioError(e.what());
   }
 
   jacobian_index_ = model_.addBodyFrame("jacobian_frame", 0);
 
   for (const auto& joint : model_.joints) {
-    // "INDEX in joint position is negative", such as the 0th joint UNIVERSE, so play it because it is not a real joint
-    // If the degree of freedom of the joints is 1 or more, the degree of freedom of the Continous joint is treated as 2.
+    // Joints like the 0th joint "universe" etc., where "joint position index is negative" are not real joints, so they are excluded
+    // Joints having a degree of freedom of 1 or more is treated as the degree of freedom of continuous joints being 2
     if (joint.idx_q() >= 0 && joint.nq() > 0) {
       joint_angles_.insert(std::make_pair(model_.names[joint.id()], 0.0));
     }
@@ -104,22 +104,22 @@ void PinocchioWrapper::Initialize(const std::string& robot_description) {
     }
   }
   initial_state.position = Eigen::VectorXd::Zero(initial_state.name.size());
-  // To update Joint_angles_ in the mimic joint
+  // To update mimic joint's joint_angles_
   SetNamedAngle(initial_state);
 }
 
-// Enter the position posture of the robot
+// Input the robot's position and orientation
 void PinocchioWrapper::SetRobotTransform(const Eigen::Affine3d& transform) {
   origin_to_robot_ = transform;
   do_fk_ = true;
 }
 
-// Acquired the position posture of the robot
+// Retrieve the robot's position and orientation
 Eigen::Affine3d PinocchioWrapper::GetRobotTransform() const {
   return origin_to_robot_;
 }
 
-// Specify the joint name of the robot and enter the joint angle
+// Specify the robot joint name and input the joint angle
 void PinocchioWrapper::SetNamedAngle(const tmc_manipulation_types::JointState& angle) {
   if (angle.name.size() != angle.position.size()) {
     throw PinocchioError("Joint name size and position size are mismatch.");
@@ -130,11 +130,11 @@ void PinocchioWrapper::SetNamedAngle(const tmc_manipulation_types::JointState& a
     }
     joint_angles_[angle.name[i]] = angle.position[i];
   }
-  // Turn the loop again so that you can overwrite even if you have subordinate joints in Angle
+  // To ensure dependent joints in angle can be overwritten correctly, loop again
   for (int i = 0; i < angle.name.size(); ++i) {
     if (mimic_joint_info_.find(angle.name[i]) != mimic_joint_info_.end()) {
       for (const auto& info : mimic_joint_info_[angle.name[i]]) {
-        // If you come so far, you can not check the existence because Joint_angles_ is unlikely to have a key.
+        // At this point, it's impossible not to have a key in joint_angles_, so skip the existence check
         joint_angles_[info.joint_name] = angle.position[i] * info.multiplier + info.offset;
       }
     }
@@ -142,7 +142,7 @@ void PinocchioWrapper::SetNamedAngle(const tmc_manipulation_types::JointState& a
   do_fk_ = true;
 }
 
-// Obtain the joint name of the robot and its angle
+// Retrieve the robot joint name and its angle
 tmc_manipulation_types::JointState PinocchioWrapper::GetNamedAngle() const {
   // TODO(Takeshita) たかだが10, 20だからmapでいいと思うけれど，別のコンテナも検討する
   tmc_manipulation_types::JointState joint_state;
@@ -155,7 +155,7 @@ tmc_manipulation_types::JointState PinocchioWrapper::GetNamedAngle() const {
   return joint_state;
 }
 
-// Obtain the joint name of the robot and its angle
+// Retrieve the robot joint name and its angle
 tmc_manipulation_types::JointState PinocchioWrapper::GetNamedAngle(
     const tmc_manipulation_types::NameSeq& joint_names) const {
   tmc_manipulation_types::JointState joint_state;
@@ -170,7 +170,7 @@ tmc_manipulation_types::JointState PinocchioWrapper::GetNamedAngle(
   return joint_state;
 }
 
-// Obtain the position posture of the object
+// Retrieve the object's position and orientation
 Eigen::Affine3d PinocchioWrapper::GetObjectTransform(const std::string& name) const {
   const auto index = model_.getFrameId(name);
   if (index == model_.nframes) {
@@ -182,7 +182,7 @@ Eigen::Affine3d PinocchioWrapper::GetObjectTransform(const std::string& name) co
   return origin_to_robot_ * (Eigen::Translation3d(pose.translation()) * Eigen::Quaterniond(pose.rotation()));
 }
 
-// Obtain the relative position posture of the object
+// Retrieve the object's relative position and orientation
 Eigen::Affine3d PinocchioWrapper::GetObjectRelativeTransform(
     const std::string& base_name, const std::string& name) const {
   const auto base_index = model_.getFrameId(base_name);
@@ -202,7 +202,7 @@ Eigen::Affine3d PinocchioWrapper::GetObjectRelativeTransform(
   return Eigen::Translation3d(base_to_target.translation()) * Eigen::Quaterniond(base_to_target.rotation());
 }
 
-// Add a frame dynamically
+// Dynamically add a frame
 void PinocchioWrapper::CreateFrame(
     const std::string& parent_frame_name,
     const Eigen::Affine3d& transform,
@@ -212,16 +212,16 @@ void PinocchioWrapper::CreateFrame(
   if (parent_frame_index == model_.nframes) {
     throw PinocchioError("object "+ parent_frame_name + " is not found.");
   }
-  model_.addBodyFrame(new_frame_name, model_.frames[parent_frame_index].parent,
+  model_.addBodyFrame(new_frame_name, model_.frames[parent_frame_index].parentJoint,
                       pinocchio::SE3(transform.linear(), transform.translation()), parent_frame_index);
 
   data_ = std::make_shared<pinocchio::Data>(model_);
 }
 
-// Dynamically delete the frame
+// Dynamically remove a frame
 void PinocchioWrapper::DestroyFrame(const std::string& frame_name) {
-  // In the implementation of addFrame, it should be deleted with this
-  // However, if you start INertia, you will need to delete it.
+  // With the implementation of addFrame, it should be removable like this
+  // However, when handling inertia, removal of that will be necessary too
   const auto it = std::find_if(model_.frames.begin(), model_.frames.end(),
                                [&frame_name](decltype(model_.frames.front()) x) { return x.name == frame_name; });
   if (it != model_.frames.end()) {
@@ -234,7 +234,7 @@ void PinocchioWrapper::DestroyFrame(const std::string& frame_name) {
   data_ = std::make_shared<pinocchio::Data>(model_);
 }
 
-// Get Jacobian
+// Retrieve the Jacobian
 Eigen::MatrixXd PinocchioWrapper::GetJacobian(
     const std::string& frame_name,
     const Eigen::Affine3d& frame_to_end,
@@ -243,8 +243,8 @@ Eigen::MatrixXd PinocchioWrapper::GetJacobian(
   if (index == model_.nframes) {
     throw PinocchioError("object "+ frame_name + " is not found.");
   }
-  model_.frames[jacobian_index_].parent = model_.frames[index].parent;
-  model_.frames[jacobian_index_].previousFrame = model_.frames[index].previousFrame;
+  model_.frames[jacobian_index_].parentJoint = model_.frames[index].parentJoint;
+  model_.frames[jacobian_index_].parentFrame = model_.frames[index].parentFrame;
   model_.frames[jacobian_index_].placement =
       model_.frames[index].placement * pinocchio::SE3(frame_to_end.linear(), frame_to_end.translation());
 
@@ -257,7 +257,7 @@ Eigen::MatrixXd PinocchioWrapper::GetJacobian(
   pinocchio::computeFrameJacobian(
       model_, data, joint_angles, jacobian_index_, pinocchio::LOCAL_WORLD_ALIGNED, jacobian);
 
-  // Take out only USE_JOINTS, but it shines one due to the influence of the mysterious 0th joint UNIVERSE
+  // Extract only use_joints, but due to the influence of the mysterious 0th joint universe, it gets offset by one
   Eigen::MatrixXd result(6, use_joints.size());
   for (int joint_name_index = 0; joint_name_index < use_joints.size(); ++joint_name_index) {
     const auto joint_id = model_.getJointId(use_joints[joint_name_index]);
@@ -266,7 +266,7 @@ Eigen::MatrixXd PinocchioWrapper::GetJacobian(
     }
     result.col(joint_name_index) = jacobian.col(joint_id - 1);
 
-    // Is this okay?Considering the meaning of Jacobian, I feel good.
+    // Is this okay? Considering the meaning of Jacobian, it seems fine
     if (mimic_joint_info_.find(use_joints[joint_name_index]) != mimic_joint_info_.end()) {
       for (const auto& info : mimic_joint_info_[use_joints[joint_name_index]]) {
         const auto joint_id = model_.getJointId(info.joint_name);
@@ -282,7 +282,7 @@ Eigen::MatrixXd PinocchioWrapper::GetJacobian(
   return origin_to_robot * result;
 }
 
-// Get joint min and max
+// Retrieve joint Min and Max
 void PinocchioWrapper::GetMinMax(
     const tmc_manipulation_types::NameSeq& use_joints,
     Eigen::VectorXd& min,

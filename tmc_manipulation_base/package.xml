@@ -1,0 +1,26 @@
+<package format="3">
+  <name>tmc_manipulation_base</name>
+  <version>2.0.1</version>
+  <description>Packages related to kinematics and collision detection.</description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <url type="website" />
+
+  <author>Koji Terada</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>tmc_collision_detector</exec_depend>
+  <exec_depend>tmc_manipulation_tests</exec_depend>
+  <exec_depend>tmc_manipulation_types</exec_depend>
+  <exec_depend>tmc_manipulation_types_bridge</exec_depend>
+  <exec_depend>tmc_robot_collision_detector</exec_depend>
+  <exec_depend>tmc_robot_kinematics_model</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>

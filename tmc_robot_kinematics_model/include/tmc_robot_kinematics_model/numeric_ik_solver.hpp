@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Solver of IK for numerical solutions
+/// @file     numeric_ik_sover.hpp
+/// @brief    Numerical solution IK solver
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.2.28
+/// @note     [1.0.0] 2012.2.28 Newly created
 
 #ifndef ROBOT_KINEMATICS_MODEL_NUMERIC_IK_SOLVER_HPP__
 #define ROBOT_KINEMATICS_MODEL_NUMERIC_IK_SOLVER_HPP__
@@ -42,6 +47,11 @@ class NumericIKSolver : public IKSolver {
  public:
   NumericIKSolver();
 
+  /// @param [in] successor IK for the next transition with Next
+  /// @param [in] robot_model Robot model
+  /// @param [in] max_itr Maximum number of iterations
+  /// @param [in] epsilon Considered as a solution when the error with the target value is less than this
+  /// @param [in] converge_threshold Considered as convergence when the change amount per iteration is less than this
   NumericIKSolver(IKSolver::Ptr successor,
                   IRobotKinematicsModel::Ptr robot_model,
                   uint32_t max_itr,

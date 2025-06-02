@@ -25,6 +25,10 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     manipulation_msg_convertor-test.cpp
+/// @version  0.1.0
+/// @author   Takao Yasuda
+/// @note     Applied for Partner-Robot Coding Rule(Ver:x.xx)
 #include <cmath>
 #include <string>
 #include <vector>
@@ -278,7 +282,8 @@ TEST_F(ManipulationTypesBridgeTest, ConvertSolidPrimitiveToShape) {
     SolidPrimitiveToShape(shape_msg, shape);
 
     EXPECT_EQ(shape.type, tmc_manipulation_types::kCylinder);
-    IsEqual(shape.dimensions, shape_msg.dimensions);
+    EXPECT_DOUBLE_EQ(shape.dimensions[0], shape_msg.dimensions[1]);
+    EXPECT_DOUBLE_EQ(shape.dimensions[1], shape_msg.dimensions[0]);
   }
 }
 
@@ -314,7 +319,8 @@ TEST_F(ManipulationTypesBridgeTest, ConvertShapeToSolidPrimitive) {
     ShapeToSolidPrimitive(shape, shape_msg);
 
     EXPECT_EQ(shape_msg.type, shape_msgs::msg::SolidPrimitive::CYLINDER);
-    IsEqual(shape_msg.dimensions, shape.dimensions);
+    EXPECT_DOUBLE_EQ(shape_msg.dimensions[0], shape.dimensions[1]);
+    EXPECT_DOUBLE_EQ(shape_msg.dimensions[1], shape.dimensions[0]);
   }
 }
 
@@ -422,7 +428,8 @@ TEST_F(ManipulationTypesBridgeTest, ConvertCollisionObjectToOuterObjectParameter
   EXPECT_EQ(outer_object.shape[1].type, tmc_manipulation_types::kBox);
   IsEqual(outer_object.shape[1].dimensions, collision_object.primitives[1].dimensions);
   EXPECT_EQ(outer_object.shape[2].type, tmc_manipulation_types::kCylinder);
-  IsEqual(outer_object.shape[2].dimensions, collision_object.primitives[2].dimensions);
+  EXPECT_DOUBLE_EQ(outer_object.shape[2].dimensions[0], collision_object.primitives[2].dimensions[1]);
+  EXPECT_DOUBLE_EQ(outer_object.shape[2].dimensions[1], collision_object.primitives[2].dimensions[0]);
   EXPECT_EQ(outer_object.shape[3].type, tmc_manipulation_types::kMeshVertices);
   IsEqual(outer_object.shape[3].vertices, collision_object.meshes[0].vertices);
   IsEqual(outer_object.shape[3].indices, collision_object.meshes[0].triangles);
@@ -474,7 +481,8 @@ TEST_F(ManipulationTypesBridgeTest, ConvertOuterObjectParametersToCollisionObjec
   EXPECT_EQ(collision_object.primitives[1].type, shape_msgs::msg::SolidPrimitive::BOX);
   IsEqual(collision_object.primitives[1].dimensions, outer_object.shape[1].dimensions);
   EXPECT_EQ(collision_object.primitives[2].type, shape_msgs::msg::SolidPrimitive::CYLINDER);
-  IsEqual(collision_object.primitives[2].dimensions, outer_object.shape[2].dimensions);
+  EXPECT_DOUBLE_EQ(collision_object.primitives[2].dimensions[0], outer_object.shape[2].dimensions[1]);
+  EXPECT_DOUBLE_EQ(collision_object.primitives[2].dimensions[1], outer_object.shape[2].dimensions[0]);
   ASSERT_EQ(collision_object.primitive_poses.size(), 3);
   IsEqual(collision_object.primitive_poses[0], outer_object.base_to_child[0]);
   IsEqual(collision_object.primitive_poses[1], outer_object.base_to_child[1]);
@@ -839,7 +847,7 @@ TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeBOX) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeCylinder) {
-  // After that, omit tests other than shape
+  // From this point onwards, tests other than for shapes are omitted
 
   // Ready
   tmc_manipulation_types::Shape collision_detector_shape;
@@ -1204,7 +1212,7 @@ TEST_F(ManipulationTypesBridgeTest, MultiDOFJointStateMsgToMultiDOFJointState) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
-  // Since it is a combination of other conversion, conversion => Reverse conversion makes it easier
+  // Since this is a combination of other transformations, simplify by transformation=>inverse transformation
   tmc_manipulation_types::RobotState robot_state_in;
   robot_state_in.joint_state = GenerateJointState();
   robot_state_in.multi_dof_joint_state = GenerateMultiDOFJointState();
@@ -1240,7 +1248,7 @@ TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, TimedRobotTrajectoryAndRobotTrajectoryMsg) {
-  // Since it is a combination of other conversion, conversion => Reverse conversion makes it easier
+  // Since this is a combination of other transformations, simplify by transformation=>inverse transformation
   tmc_manipulation_types::TimedRobotTrajectory robot_trajectory_in;
   robot_trajectory_in.joint_trajectory = GenerateTimedJointTrajectory();
   robot_trajectory_in.multi_dof_joint_trajectory = GenerateTimedMultiDOFJointTrajectory();
@@ -1284,7 +1292,7 @@ TEST_F(ManipulationTypesBridgeTest, TimedRobotTrajectoryAndRobotTrajectoryMsg) {
   }
 }
 
-// 割愛：ConvertSequenceWithEigenIn, ConvertSequenceWithEigenOut
+// Omitted: ConvertSequenceWithEigenIn, ConvertSequenceWithEigenOut
 }  // namespace tmc_manipulation_types_bridge
 
 

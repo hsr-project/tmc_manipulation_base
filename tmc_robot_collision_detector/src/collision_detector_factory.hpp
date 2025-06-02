@@ -25,7 +25,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief CollisionDetector generation class
+/// @file collision_detector_factory.hpp
+/// @brief CollisionDetector creation class
 #ifndef COLLISION_DETECTOR_FACTORY_HPP_
 #define COLLISION_DETECTOR_FACTORY_HPP_
 
@@ -38,7 +39,7 @@ using tmc_collision_detector::ICollisionDetector;
 
 namespace tmc_robot_collision_detector {
 
-/// CollisionDetector generation class
+/// CollisionDetector creation class
 class CollisionDetectorFactory {
  public:
   using Ptr = std::shared_ptr<CollisionDetectorFactory>;
@@ -46,11 +47,11 @@ class CollisionDetectorFactory {
   explicit CollisionDetectorFactory(const std::string& engine)
       : engine_(engine) {}
 
-  /// CollisionDetector generation
+  /// Creation of CollisionDetector
   std::shared_ptr<ICollisionDetector> CreateCollisionDetector();
 
  private:
-  /// Used physical engine name
+  /// Name of physics engine to use
   std::string engine_;
 };
 }  // namespace tmc_robot_collision_detector

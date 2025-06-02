@@ -25,7 +25,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    A group of functions that handle structures exchanged with TMC_MANIPULATION
+/// @file     utils.cpp
+/// @brief    A group of functions to process the structures exchanged in tmc_manipulation
 
 #include <tmc_manipulation_types/utils.hpp>
 
@@ -36,7 +37,7 @@ using Eigen::VectorXd;
 
 namespace {
 
-// Extract part vector from Vector
+// Extract a sub-vector from a vector
 template <typename T>
 T ExtractPartialVector(
     const T& vector_in,

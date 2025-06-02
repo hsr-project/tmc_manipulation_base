@@ -25,6 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/*
+ * robot_kinematics.hpp
+ *
+ *  Created on: 2012/02/08
+ *      Author: takeshita
+ */
 #ifndef TMC_ROBOT_KINEMATICS_MODEL_ROBOT_KINEMATICS_MODEL_HPP_
 #define TMC_ROBOT_KINEMATICS_MODEL_ROBOT_KINEMATICS_MODEL_HPP_
 #include <stdint.h>
@@ -40,77 +46,90 @@ DAMAGE.
 
 namespace tmc_robot_kinematics_model {
 
-/// Jointstate is an unauthorized exception
+/// Exception for invalid JointState
 class JointStateError : public std::domain_error {
  public:
   explicit JointStateError(const std::string &error) :
     std::domain_error("error: " + error + " failed") {}
 };
 
-/// Robot athletic model
-/// For the time being, only the functions required around the interference check
+/// Kinematic model of the robot
+/// For now, only the necessary functions for the interference check are included
 class IRobotKinematicsModel {
  public:
   using Ptr = std::shared_ptr<IRobotKinematicsModel>;
   virtual ~IRobotKinematicsModel() {}
 
-  /// @brief  Initialization of robot models
-  /// @param  [IN] robot_description robot model
+  /// @brief  Initialization of the robot model
+  /// @param  [in] robot_description Robot model
   virtual void Initialize(const std::string& robot_description) = 0;
 
-  /// @brief  Set the pose of the robot
-  /// @param  [IN] transform Robot's pose
+  /// @brief  Input the robot's position and orientation
+  /// @param  [in] transform Robot posture
   virtual void SetRobotTransform(const Eigen::Affine3d& transform) = 0;
 
-  /// @brief  Acquired the position posture of the robot
-  /// @return Eigen::Affine3d Robot's pose
+  /// @brief  Retrieve the robot's position and orientation
+  /// @return Eigen::Affine3d Robot posture
   virtual Eigen::Affine3d GetRobotTransform(void) const = 0;
 
-  /// @brief  Specify the joint name of the robot and enter the joint angle
-  /// @param  [IN] angle robot joint configuration
+  /// @brief  Specify the robot joint name and input the joint angle
+  /// @param  [in] angle Robot joint information
+  /// @exception domain_error Throws exception when nonexistent joint angle name is inputted
+  /// @exception domain_error Throws exception if the size of joint angle and joint name differs
   virtual void SetNamedAngle(
       const tmc_manipulation_types::JointState& angle) = 0;
 
-  /// @brief  Get the robot joint configuration
+  /// @brief  Retrieve robot joint information
+  /// @return JointState Robot joint information
   virtual tmc_manipulation_types::JointState GetNamedAngle(void) const = 0;
 
-  /// @brief  Get the joint configuration of the robot by specifying the joint name
-  /// @param  [IN] joint_names Joint names
+  /// @brief  Retrieve robot joint information by specifying joint names
+  /// @param  [in] joint_names Vector of joint names
+  /// @return JointState Robot joint information
+  /// @exception domain_error Throws exception when nonexistent joint angle name is inputted
   virtual tmc_manipulation_types::JointState GetNamedAngle(
       const tmc_manipulation_types::NameSeq& joint_names) const = 0;
 
-  /// @brief  Obtain the pose of the object
-  /// @param  [IN] name Object name
+  /// @brief  Retrieve the position and orientation of an object
+  /// @param  [in] name Name of the object to retrieve
+  /// @return Eigen::Affine3d Position and orientation of the object
+  /// @exception domain_error Throws exception when nonexistent object name is inputted.
   virtual Eigen::Affine3d GetObjectTransform(
       const std::string& name) const = 0;
-  /// Obtain the relative poseof the object
+  /// Retrieve the relative position and orientation of the object
   virtual Eigen::Affine3d GetObjectRelativeTransform(
       const std::string& base_name, const std::string& name) const = 0;
 
-  /// @brief  Add a frame dynamically
-  /// @param  [IN] parent_frame_name Name of parent frame
-  /// @param  [IN] transform  Pose based on parent frame
-  /// @param  [IN] new_frame_name Adding frame name
+  /// @brief  Dynamically add a frame
+  /// @param  [in] parent_frame_name Name of the parent frame
+  /// @param  [in] transform Position and orientation of the frame to be added relative to the parent frame
+  /// @param  [in] new_frame_name Name of the frame to be added
+  /// @exception domain_error Throws exception if a nonexistent object name is set as the parent frame.
   virtual void CreateFrame(
       const std::string& parent_frame_name, const Eigen::Affine3d& transform,
       const std::string& new_frame_name) = 0;
 
-  /// @brief  Dynamically delete the frame
-  /// @param  [IN] frame_name deleted frame name
+  /// @brief  Dynamically delete a frame
+  /// @param  [in] frame_name Name of the frame to delete
+  /// @exception domain_error Throws exception if a frame name not created is inputted.
   virtual void DestroyFrame(const std::string& frame_name) = 0;
 
-  /// @brief  Get Jacobian
-  /// @param  [IN] frame_name Target frame
-  /// @param  [IN] frame_to_end Offset from target frame
-  /// @param  [IN] use_joints Target joint list
+  /// @brief  Retrieve the Jacobian
+  /// @param  [in] frame_name Target frame
+  /// @param  [in] frame_to_end Offset from the target frame
+  /// @param  [in] use_joints Target joint list
+  /// @return Eigen::MatrixXd Jacobian
+  /// @exception domain_error Throws exception when nonexistent frame name is inputted.
+  /// @exception domain_error Throws exception when nonexistent joint name is inputted.
   virtual Eigen::MatrixXd GetJacobian(const std::string& frame_name,
                                       const Eigen::Affine3d& frame_to_end,
                                       const tmc_manipulation_types::NameSeq& use_joints) = 0;
 
-  /// @brief  Get joint min and max
-  /// @param  [IN] use_joints Joint names
-  /// @param  [OUT] min Lower limit
-  /// @param  [OUT] max Upper limits
+  /// @brief  Retrieve Min and Max of joints
+  /// @param  [in] use_joints Names of joints to retrieve
+  /// @param  [out] min Lower limit column of joint angle
+  /// @param  [out] max Upper limit column of joint angle
+  /// @exception domain_error Throws exception when nonexistent joint name is inputted.
   virtual void GetMinMax(const tmc_manipulation_types::NameSeq& use_joints,
                          Eigen::VectorXd& min, Eigen::VectorXd& max) const = 0;
 };

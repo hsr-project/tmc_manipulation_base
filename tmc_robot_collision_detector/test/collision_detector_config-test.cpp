@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file collision_detector_config-test.cpp
-/// @brief Test of class that holds interference check settings
+/// @brief Test class that holds settings for interference checks
 #include <fstream>
 #include <string>
 #include <gtest/gtest.h>
@@ -73,103 +73,103 @@ class CollisionDetectorConfigTest : public ::testing::Test {
 };
 
 TEST_F(CollisionDetectorConfigTest, Constructor) {
-  // Normal system: Read the correct configuration file
+  // Normal case: Read the correct configuration file
   EXPECT_EQ(4, config_->GetGroupNameList().size());
 
-  // Anomaly system: Specify a configuration file with a grammatical mistake
+  // Abnormal case: Specify a configuration file with syntax errors
   EXPECT_ANY_THROW(std::make_shared<CollisionDetectorConfig>(LoadFile("gtest/incorrect_coldet_config.xml")));
 
-  // Abnormal system: Read the configuration file with the number of groups exceeding the upper limit
+  // Abnormal case: Read a configuration file where the number of groups exceeds the limit
   EXPECT_ANY_THROW(std::make_shared<CollisionDetectorConfig>(LoadFile("gtest/too_many_group_config.xml")));
 
-  // Abnormal system: The non -existent group has been used as an exclusion pair of interference checks.
+  // Abnormal case: Specified non-existent group for interference check exclusion pair
   // Read the configuration file
   EXPECT_ANY_THROW(std::make_shared<CollisionDetectorConfig>(LoadFile("gtest/non_exist_group_contact.xml")));
 
-  // Abnormal system: The non -existent group has been used as an exclusion pair of interference checks.
+  // Abnormal case: Specified non-existent group for interference check exclusion pair
   // Read the configuration file
   EXPECT_ANY_THROW(std::make_shared<CollisionDetectorConfig>(LoadFile("gtest/non_exist_group_inner.xml")));
 }
 
 TEST_F(CollisionDetectorConfigTest, GetBitByObject) {
-  // Normal system: Acquire group BIT by specifying the object name
+  // Normal case: Retrieve group bit by specifying object name
   for (int32_t i = 0; i < kObjectNum; i++) {
     EXPECT_EQ(kGroupAnswer[i],
               config_->GetGroupBitByObjectName(kObjectName[i]));
   }
 
-  // Normal system: Acquire a filter bit by specifying the object name
+  // Normal case: Retrieve filter bit by specifying object name
   for (int32_t i = 0; i < kObjectNum; i++) {
     EXPECT_EQ(kFilterAnswer[i],
               config_->GetFilterBitByObjectName(kObjectName[i]));
   }
 
-  // Normal system: Get Inner bit by specifying the object name
+  // Normal case: Retrieve Inner bit by specifying object name
   for (int32_t i = 0; i < (kObjectNum-1); i++) {
     EXPECT_EQ(kInnerAnswer[i],
               config_->GetInnerFilterBit(kObjectName[i]));
   }
 
-  // Abnormal system: Get Inner bit by specifying object names that are not robot sites
+  // Abnormal case: Retrieve Inner bit by specifying object name that is not a robot part
   EXPECT_ANY_THROW(config_->GetInnerFilterBit(kObjectName[kObjectNum - 1]));
 }
 
 TEST_F(CollisionDetectorConfigTest, GetBitByGroup) {
-  // Normal system: Acquire group BIT by specifying the group name
+  // Normal case: Retrieve group bit by specifying group name
   for (int32_t i = 0; i < kObjectNum; i++) {
     EXPECT_EQ(kGroupAnswer[i],
               config_->GetGroupBitByGroupName(kGroupName[i]));
   }
 
-  // Normal system: Acquire a filter bit by specifying the group name
+  // Normal case: Retrieve filter bit by specifying group name
   for (int32_t i = 0; i < kObjectNum; i++) {
     EXPECT_EQ(kFilterAnswer[i],
               config_->GetFilterBitByGroupName(kGroupName[i]));
   }
 
-  // Abnormal system: Acquire a group bit by specifying a group name that does not exist
+  // Abnormal case: Retrieve group bit by specifying non-existent group name
   EXPECT_ANY_THROW(config_->GetGroupBitByGroupName("hoge"));
 
-  // Abnormal system: Acquire a filter bit by specifying a group name that does not exist
+  // Abnormal case: Retrieve filter bit by specifying non-existent group name
   EXPECT_ANY_THROW(config_->GetFilterBitByGroupName("hoge"));
 }
 
 TEST_F(CollisionDetectorConfigTest, SetConfig) {
-  // Normal system: Set and change the change
+  // Normal case: Setting changes are reflected
   uint16_t category = config_->GetGroupBitByGroupName(kGroupName[0]);
   uint16_t filter = config_->GetFilterBitByGroupName(kGroupName[0]);
   EXPECT_NO_THROW(config_->SetConfig(kGroupName[0], category - 1, filter - 1));
   EXPECT_EQ(category - 1, config_->GetGroupBitByGroupName(kGroupName[0]));
   EXPECT_EQ(filter - 1, config_->GetFilterBitByGroupName(kGroupName[0]));
 
-  // Abnormal system: Set with specified group name that does not exist
+  // Abnormal case: Specify non-existent group name for setting
   EXPECT_ANY_THROW(config_->SetConfig("hoge", 1, 2));
 }
 
 
 TEST_F(CollisionDetectorConfigTest, GetName) {
-  // Normal system: Acquire group names from the object name
+  // Normal case: Retrieve group name from object name
   for (int32_t i = 0; i < kObjectNum; i++) {
     EXPECT_EQ(kGroupName[i], config_->GetBelongedGroupName(kObjectName[i]));
   }
 
-  // Normal system: Outer returns when you get a group of non -existent objects
+  // Normal case: OUTER is returned when retrieving the group of a non-existent object
   EXPECT_EQ(std::string("OUTER"), config_->GetBelongedGroupName("hoge"));
 
-  // Normal system: Acquire a list of objects belonging to the group
+  // Normal case: Retrieve the list of objects belonging to a group
   EXPECT_EQ(3, config_->GetObjectListInGroup(kGroupName[0]).size());
   EXPECT_EQ(2, config_->GetObjectListInGroup(kGroupName[3]).size());
   EXPECT_EQ(1, config_->GetObjectListInGroup(kGroupName[5]).size());
   EXPECT_EQ(0, config_->GetObjectListInGroup(kGroupName[6]).size());
 
-  // Normal system: Obtain the group name list of robot parts
+  // Normal case: Retrieve the list of robot part group names
   EXPECT_EQ(3, config_->GetRobotPartsGroupNameList().size());
 
-  // Normal system: Obtain a list of object pairs excluded from interference checks
+  // Normal case: Retrieve the list of object pairs excluded from interference check
   EXPECT_EQ(3, config_->GetDisableObjectPairList().size());
 
-  // Abnormal system: Specify a group name that does not exist
-  // Get the list of objects belonging to the group
+  // Abnormal case: Specify non-existent group name
+  // Retrieve the list of objects belonging to a group
   EXPECT_ANY_THROW(config_->GetObjectListInGroup("hoge"));
 }
 }  // namespace tmc_robot_collision_detector

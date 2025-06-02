@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<CollisionDetectConfig>
+  <group name= "gripper">
+    <object name="hand_palm_link/collision/0"/>
+    <object name="hand_l_spring_proximal_link/collision/0"/>
+    <object name="hand_l_distal_link/collision/0"/>
+    <object name="hand_r_spring_proximal_link/collision/0"/>
+    <object name="hand_r_distal_link/collision/0"/>
+  </group>
+
+  <group name= "OUTER">
+  </group>
+
+  <group name= "CUBOID">
+  </group>
+
+  <robot-parts-group>
+    <group name="gripper"/>
+  </robot-parts-group>
+
+  <non-contact>
+  </non-contact>
+
+  <non-check-inner-distance>
+  </non-check-inner-distance>
+
+</CollisionDetectConfig>

@@ -25,7 +25,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief Common setting of interference checks using a robot model
+/// @file robot_collision_detector_common.hpp
+/// @brief Common settings for interference check using robot model
 #ifndef TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_COMMON_HPP_
 #define TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_COMMON_HPP_
 
@@ -44,53 +45,53 @@ DAMAGE.
 #include <tmc_robot_kinematics_model/robot_kinematics_model.hpp>
 
 namespace tmc_robot_collision_detector {
-/// AABB array
+/// Array of AABB
 using AABBSeq = std::vector<tmc_manipulation_types::AABB, Eigen::aligned_allocator<tmc_manipulation_types::AABB>>;
 
-/// External object map
+/// Map of external objects
 using OuterObjectMap =
     std::map<std::string, tmc_manipulation_types::OuterObjectParameters, std::less<std::string>,
              Eigen::aligned_allocator<std::pair<const std::string, tmc_manipulation_types::OuterObjectParameters>>>;
 
-/// Structure that holds Cuboid
+/// Structure holding Cuboid
 struct BoundingBox {
   std::vector<std::string> group_name;
   std::vector<tmc_manipulation_types::CuboidSeq> boxes;
 };
 
-/// What to determine the overlap between Cuboid and robot
+/// Criteria to determine overlap between Cuboid and robot
 enum CuboidOverlapType {
-  /// Deterts overlapping on the XY plane
+  /// Determine overlap on XY plane
   kOverlap2DMap = 0,
-  /// Determination of overlapping with AABB
+  /// Determine overlap with AABB
   kOverlapAabb
 };
 
-/// How to deal with robot AABB
+/// How to handle robot's AABB
 enum CuboidOverlapGroupType {
-  /// Measures overlapping for each group of robots
+  /// Determine overlap for each group of robot's parts
   kOverlapGroup = 0,
-  /// Performs overlapping with AABB of the entire robot
+  /// Determine overlap with entire robot's AABB
   kOverlapRobot
 };
 
-/// Search results for nearby objects
+/// Search results of nearby objects
 struct ClosestObject {
-  /// Search object name
+  /// Name of object to search
   std::string name;
-  /// Results inside the robot
+  /// Results within robot
   tmc_collision_detector::ClosestResult inner_result;
-  /// Robot external results
+  /// Results outside robot
   tmc_collision_detector::ClosestResult outer_result;
 };
 
-/// Robot model file type
+/// File type of robot model
 enum ModelFileType {
-  kTrml,
-  kUrdf
+  kTrml,  /// Model in trml (Toyota proprietary format) format
+  kUrdf   /// Model in urdf (ROS standard) format
 };
 
-/// Information for Collison's position/posture
+/// Information for collision position/orientation
 struct CollisionFrameInfo {
   std::string parent_name;
   Eigen::Affine3d parent_to_child;

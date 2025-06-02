@@ -25,21 +25,27 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief CollisionDetector generation class
+/// @file collision_detector_factory.cpp
+/// @brief CollisionDetector Generation Class
 
+#include <tmc_collision_detector/fcl_collision_detector.hpp>
 #include <tmc_collision_detector/ODE_collision_detector.hpp>
+
 #include "collision_detector_factory.hpp"
 
 namespace tmc_robot_collision_detector {
 
-/// @brief  CollisionDetector generation
-/// @return STD :: Shared_ptr <iCollisionDetector> Interference check
+/// @brief  Generation of CollisionDetector
+/// @return std::shared_ptr<ICollisionDetector> Collision Check
 std::shared_ptr<ICollisionDetector>
 
 CollisionDetectorFactory::CreateCollisionDetector() {
   if (engine_ == tmc_collision_detector::kODEName) {
     return ICollisionDetector::Ptr(
                new tmc_collision_detector::ODECollisionDetector());
+  } else if (engine_ == tmc_collision_detector::kFclName) {
+    return ICollisionDetector::Ptr(
+               new tmc_collision_detector::FclCollisionDetector());
   } else {
     throw std::domain_error("error: " + engine_ + " is invalid type.");
   }

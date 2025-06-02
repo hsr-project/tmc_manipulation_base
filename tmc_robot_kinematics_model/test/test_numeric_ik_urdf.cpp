@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Numericiksolver test in URDF
+/// @file     test_numeric_ik_urdf.cpp
+/// @brief    Test NumericIKSolver with urdf
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.04.09
+/// @note     [1.0.0] 2012.04.09 Newly created
 
 #include <string>
 
@@ -36,7 +41,7 @@ DAMAGE.
 
 #include <tmc_manipulation_tests/configs.hpp>
 
-// If you include the Pinocchio header after the Boost system, the build will not pass, so you will do it first.
+// Include pinocchio headers before boost headers to avoid build failure
 #include <tmc_robot_kinematics_model/pinocchio_wrapper.hpp>
 
 #include <tmc_robot_kinematics_model/numeric_ik_solver.hpp>
@@ -62,9 +67,9 @@ constexpr double kEpsilon = 1.0e-3;
 constexpr double kConvergeThreshold = 1.0e-10;
 constexpr int32_t kItr = 1000;
 
-// Margin for the limit
+// Margin for limits
 constexpr double kDeltaJoint = 0.1;
-// Microphilic intake given to the hand
+// Small perturbation given to the hand
 constexpr double kHandDelta = 0.005;
 
 double GetPosition(JointState joint_state, std::string name) {
@@ -81,7 +86,7 @@ double GetPosition(JointState joint_state, std::string name) {
   throw std::invalid_argument("cannot found joint");
 }
 
-/// Calculate the displacement of two posture
+/// Calculate the displacement between two postures
 double CalcPoseDiff(const Eigen::Affine3d pose_src,
                     const Eigen::Affine3d pose_dst) {
   Eigen::Matrix<double, 6, 1> diff;
@@ -95,7 +100,7 @@ double CalcPoseDiff(const Eigen::Affine3d pose_src,
 }
 }  // anonymous namespace
 
-/// Test fiscal
+/// Test Fixture
 class NumericIKTest : public ::testing::Test {
  protected:
   NumericIKTest() {
@@ -131,9 +136,9 @@ class NumericIKTest : public ::testing::Test {
   NameSeq use_name_;
 };
 
-// Easy case
+// Simple case
 TEST_F(NumericIKTest, SimpleCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -162,7 +167,7 @@ TEST_F(NumericIKTest, SimpleCase) {
   EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, hand), kEpsilon);
 }
 
-// Case that contains infinite rotation joints
+// Case with infinite rotation joint included
 TEST_F(NumericIKTest, ContinuousJoint) {
   JointState state;
   state.name = {"dummy_continuous_joint"};
@@ -187,12 +192,12 @@ TEST_F(NumericIKTest, ContinuousJoint) {
   Eigen::Affine3d result_pose;
   ASSERT_EQ(kSuccess, solver->Solve(req, solution, result_pose));
   EXPECT_LT(CalcPoseDiff(result_pose, goal_pose), kEpsilon);
-  // Due to the shaft configuration, the rotation of 2.5 should be separated between joint6 and dummy_continuous_joint.
+  // Due to axis configuration, rotation of 2.5 should be divided between joint6 and dummy_continuous_joint
   EXPECT_NEAR(solution.position[5], 0.6 + 2.5 / 2.0, 0.05);
   EXPECT_NEAR(solution.position[6], 2.5 / 2.0, 0.05);
 }
 
-// Case that contains MIMIC joints
+// Case with mimic joint included
 TEST_F(NumericIKTest, MimicJoint) {
   const auto goal_pose = robot_->GetObjectTransform("dummy_mimic_link");
 
@@ -213,9 +218,9 @@ TEST_F(NumericIKTest, MimicJoint) {
   EXPECT_LT(CalcPoseDiff(result_pose, goal_pose), kEpsilon);
 }
 
-// Exceptions will be made by specifying the non -existent joint
+// Exception occurs when specifying a non-existent joint
 TEST_F(NumericIKTest, NoExistJoint) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -242,9 +247,9 @@ TEST_F(NumericIKTest, NoExistJoint) {
   EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
 }
 
-// Exceptions will appear by specifying the non -existent frame
+// Exception occurs when specifying a non-existent frame
 TEST_F(NumericIKTest, NoExistFrame) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -271,9 +276,9 @@ TEST_F(NumericIKTest, NoExistFrame) {
   EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
 }
 
-// 6 Exceptions will appear in settings below the degree of freedom
+// Exception occurs with settings of six degrees of freedom and below
 TEST_F(NumericIKTest, UnderSixAxis) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -299,9 +304,9 @@ TEST_F(NumericIKTest, UnderSixAxis) {
   EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
 }
 
-// Ends with Converge or MaxitR outside reach
+// Out of reach, ends with Converge or MaxItr
 TEST_F(NumericIKTest, OutOfRange) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -325,9 +330,9 @@ TEST_F(NumericIKTest, OutOfRange) {
   EXPECT_TRUE(responses.empty());
 }
 
-// Interrupt
+// Interrupt is applied
 TEST_F(NumericIKTest, Interruption) {
-  // Solve by input outside reach
+  // Solve with out-of-reach input
   IKSolver::Ptr solver(new NumericIKSolver(IKSolver::Ptr(), robot_, kItr, kEpsilon, 0.0));
 
   IKRequest req;
@@ -346,10 +351,10 @@ TEST_F(NumericIKTest, Interruption) {
   auto end = std::chrono::system_clock::now();
   const auto no_interruption_duration = end - start;
 
-  // It doesn't reach + Converge_threshold = 0.0, so it ends with maxitr
+  // Doesn't reach + converge_threshold = 0.0, ends with MaxItr
   EXPECT_EQ(result, kMaxItr);
 
-  // If there is an interrupt, it should come out in an instant
+  // Should exit instantly with interrupt
   std::function<bool()> func = []() -> bool{ return true; };
 
   start = std::chrono::system_clock::now();
@@ -357,13 +362,13 @@ TEST_F(NumericIKTest, Interruption) {
   end = std::chrono::system_clock::now();
 
   EXPECT_EQ(result, kInterruption);
-  // KITR doubles should be different, but compare them in 1/10 to stabilize the test.
+  // Although kItr multiples should differ, compare with 1/10 for test stability
   EXPECT_LT(end - start, no_interruption_duration / (kItr / 10));
 }
 
-// A solution using a plane movement will come out
+// Solution using planar movement occurs
 TEST_F(NumericIKTest, PlanarBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -389,9 +394,9 @@ TEST_F(NumericIKTest, PlanarBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
@@ -404,9 +409,9 @@ TEST_F(NumericIKTest, PlanarBaseCase) {
   EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, origin_to_hand), kEpsilon);
 }
 
-// An solution using the floating movement will come out
+// Solution using floating movement occurs
 TEST_F(NumericIKTest, FloatBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(
           IKSolver::Ptr(),
@@ -433,13 +438,13 @@ TEST_F(NumericIKTest, FloatBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
 }
 
-// A solution using horizontal X will come out
+// Solution using horizontal X occurs
 TEST_F(NumericIKTest, RailXBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -465,9 +470,9 @@ TEST_F(NumericIKTest, RailXBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
@@ -475,9 +480,9 @@ TEST_F(NumericIKTest, RailXBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// An solution using horizontal Y will come out
+// Solution using horizontal Y occurs
 TEST_F(NumericIKTest, RailYBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -503,9 +508,9 @@ TEST_F(NumericIKTest, RailYBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
@@ -513,9 +518,9 @@ TEST_F(NumericIKTest, RailYBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// A solution using horizontal Z will come out
+// Solution using horizontal Z occurs
 TEST_F(NumericIKTest, RailZBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -541,9 +546,9 @@ TEST_F(NumericIKTest, RailZBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
@@ -551,9 +556,9 @@ TEST_F(NumericIKTest, RailZBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// A solution using rotation X will come out
+// Solution using rotation X occurs
 TEST_F(NumericIKTest, RotationXBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -579,9 +584,9 @@ TEST_F(NumericIKTest, RotationXBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
@@ -591,9 +596,9 @@ TEST_F(NumericIKTest, RotationXBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().z(), kEpsilon);
 }
 
-// Solution using rotation Y comes out
+// Solution using rotation Y occurs
 TEST_F(NumericIKTest, RotationYBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -619,9 +624,9 @@ TEST_F(NumericIKTest, RotationYBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
@@ -631,9 +636,9 @@ TEST_F(NumericIKTest, RotationYBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().z(), kEpsilon);
 }
 
-// A solution using rotation Z will come out
+// Solution using rotation Z occurs
 TEST_F(NumericIKTest, RotationZBaseCase) {
-  // Only numerical solution
+  // Numeric solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -659,9 +664,9 @@ TEST_F(NumericIKTest, RotationZBaseCase) {
       solution,
       origin_to_base,
       origin_to_hand_result));
-  // Hand position is correct
+  // End-effector position is correct
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
-  // The restraint is correct
+  // Constraints are correct
   Eigen::Translation3d trans(origin_to_base.translation());
   Eigen::AngleAxisd rotation(origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
@@ -671,14 +676,14 @@ TEST_F(NumericIKTest, RotationZBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().x(), kEpsilon);
 }
 
-// Read as a plugin
+// Loaded as a plugin
 TEST_F(NumericIKTest, Plugin) {
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver> loader(
       "tmc_robot_kinematics_model", "tmc_robot_kinematics_model::IKSolver");
   auto solver = loader.createSharedInstance("tmc_robot_kinematics_model/NumericIKSolver");
   solver->set_robot_description(tmc_manipulation_tests::stanford_manipulator::GetUrdf());
 
-  // The numbers are the same as SimpleCase
+  // Numbers are the same as SimpleCase
   IKRequest req;
   req.frame_name = "link7";
   req.frame_to_end = Eigen::Affine3d::Identity();

@@ -25,6 +25,11 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     collision_detector_exception.hpp
+/// @brief    Exception class
+/// @author   Keisuke Takeshita
+/// @version  1.0.0
+/// @date     2012.05.24
 #ifndef TMC_COLLISION_DETECTOR_COLLISION_DETECTOR_EXCEPTION_HPP_
 #define TMC_COLLISION_DETECTOR_COLLISION_DETECTOR_EXCEPTION_HPP_
 
@@ -33,28 +38,28 @@ DAMAGE.
 #include  <string>
 
 namespace tmc_collision_detector {
-/// I tried to manipulate an object that I didn't Create
+/// Attempted to operate on an object that has not been created
 class NonCreateError : public std::domain_error {
  public:
   explicit NonCreateError(const std::string& error) :
     std::domain_error("error: operation to non created object " + error) {}
 };
 
-/// There is no type
+/// Type does not exist
 class NonExistTypeError : public std::domain_error {
  public:
   explicit NonExistTypeError(const std::string& error) :
   std::domain_error("error: not exist primitive type " + error) {}
 };
 
-/// Shape parameters are illegal (length is negative, there is no STL file, etc.)
+/// Invalid parameters for shape (negative length, STL file does not exist, etc.)
 class InvalidShapeParamError : public std::domain_error {
  public:
   explicit InvalidShapeParamError(const std::string& error) :
   std::domain_error("error: " + error) {}
 };
 
-/// Unauthorized objects interfere
+/// Invalid object interference
 class InvalidObjectContactError : public std::domain_error {
  public:
   explicit InvalidObjectContactError(const std::string& error) :
