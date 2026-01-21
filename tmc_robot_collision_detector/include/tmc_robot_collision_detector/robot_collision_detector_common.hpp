@@ -45,7 +45,7 @@ DAMAGE.
 #include <tmc_robot_kinematics_model/robot_kinematics_model.hpp>
 
 namespace tmc_robot_collision_detector {
-/// Array of AABB
+/// Array of AABBs
 using AABBSeq = std::vector<tmc_manipulation_types::AABB, Eigen::aligned_allocator<tmc_manipulation_types::AABB>>;
 
 /// Map of external objects
@@ -53,41 +53,41 @@ using OuterObjectMap =
     std::map<std::string, tmc_manipulation_types::OuterObjectParameters, std::less<std::string>,
              Eigen::aligned_allocator<std::pair<const std::string, tmc_manipulation_types::OuterObjectParameters>>>;
 
-/// Structure holding Cuboid
+/// Structure holding a Cuboid
 struct BoundingBox {
   std::vector<std::string> group_name;
   std::vector<tmc_manipulation_types::CuboidSeq> boxes;
 };
 
-/// Criteria to determine overlap between Cuboid and robot
+/// Criteria for determining overlap between Cuboid and robot
 enum CuboidOverlapType {
-  /// Determine overlap on XY plane
+  /// Determine overlap on the XY plane
   kOverlap2DMap = 0,
   /// Determine overlap with AABB
   kOverlapAabb
 };
 
-/// How to handle robot's AABB
+/// How to handle the robot's AABB
 enum CuboidOverlapGroupType {
-  /// Determine overlap for each group of robot's parts
+  /// Determine overlap for each group of robot parts
   kOverlapGroup = 0,
-  /// Determine overlap with entire robot's AABB
+  /// Determine overlap with the entire robot's AABB
   kOverlapRobot
 };
 
-/// Search results of nearby objects
+/// Search results for nearby objects
 struct ClosestObject {
-  /// Name of object to search
+  /// Name of the object to search
   std::string name;
-  /// Results within robot
+  /// Results within the robot
   tmc_collision_detector::ClosestResult inner_result;
-  /// Results outside robot
+  /// Results outside the robot
   tmc_collision_detector::ClosestResult outer_result;
 };
 
-/// File type of robot model
+/// File type of the robot model
 enum ModelFileType {
-  kTrml,  /// Model in trml (Toyota proprietary format) format
+  kTrml,  /// Model in trml (Toyota proprietary format)
   kUrdf   /// Model in urdf (ROS standard) format
 };
 

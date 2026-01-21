@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     manipulation_msg_convertor.hpp
-/// @brief    Definition of library for message type conversion or inverse conversion
+/// @brief    Definition of message type conversion or inverse conversion library
 /// @version  0.1.0
 /// @author   Takao Yasuda
 /// @note     Applied for Partner-Robot Coding Rule(Ver:x.xx)
@@ -68,7 +68,7 @@ DAMAGE.
 
 
 namespace tmc_manipulation_types_bridge {
-/// Convert array to another using convert function
+/// Convert an array to another array using the covert function
 /// @param seq_in Input vector type
 /// @param seq_out Output vector type
 /// @param convert_func Conversion function
@@ -86,7 +86,7 @@ void ConvertSequence(
   }
 }
 
-/// @brief Convert array to another using convert function (when input vector is Eigen type)
+/// @brief Convert an array to another array using the covert function (when the input vector is of eigen type)
 /// @param seq_in Input vector type
 /// @param seq_out Output vector type
 /// @param convert_func Conversion function
@@ -104,7 +104,7 @@ void ConvertSequenceWithEigenIn(
   }
 }
 
-/// Convert array to another using convert function (when output vector is Eigen type)
+/// Convert an array to another array using the covert function (when the output vector is of eigen type)
 /// @param seq_in Input vector type
 /// @param seq_out Output vector type
 /// @param convert_func Conversion function

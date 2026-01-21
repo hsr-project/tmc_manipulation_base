@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_manipulation_tests</name>
-  <version>2.0.1</version>
-  <description>Place the robot definition file for testing.</description>
+  <version>2.0.2</version>
+  <description>Place the robot definition file for testing</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

@@ -43,7 +43,7 @@ using tmc_manipulation_types::NameSeq;
 constexpr int EVAL_COUNT = 100000;
 
 std::string load_hsrb_urdf() {
-  // A script for operation verification, so it's simplified
+  // This is a script for operation check, so it's a quick job
   std::ifstream xml_file("/opt/ros/noetic/share/hsrb_description/robots/hsrb.urdf");
   std::string xml_string;
   while (xml_file.good()) {

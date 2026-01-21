@@ -52,14 +52,14 @@ class NonExistTypeError : public std::domain_error {
   std::domain_error("error: not exist primitive type " + error) {}
 };
 
-/// Invalid parameters for shape (negative length, STL file does not exist, etc.)
+/// Invalid shape parameters (negative length, STL file does not exist, etc.)
 class InvalidShapeParamError : public std::domain_error {
  public:
   explicit InvalidShapeParamError(const std::string& error) :
   std::domain_error("error: " + error) {}
 };
 
-/// Invalid object interference
+/// Invalid object interfered
 class InvalidObjectContactError : public std::domain_error {
  public:
   explicit InvalidObjectContactError(const std::string& error) :

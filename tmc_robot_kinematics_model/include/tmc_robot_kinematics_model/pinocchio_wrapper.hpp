@@ -39,7 +39,7 @@ DAMAGE.
 
 namespace tmc_robot_kinematics_model {
 
-/// Pinocchio function failed
+/// The function of pinocchio failed
 class PinocchioError : public std::domain_error {
  public:
   explicit PinocchioError(const std::string &error) :
@@ -52,24 +52,24 @@ class PinocchioWrapper : public IRobotKinematicsModel {
   explicit PinocchioWrapper(const std::string& robot_description);
   virtual ~PinocchioWrapper() = default;
 
-  /// Robot model initialization
+  /// Initialization of the robot model
   void Initialize(const std::string& robot_description) override;
 
-  /// Input robot's position and posture
+  /// Input the robot's position and orientation
   void SetRobotTransform(const Eigen::Affine3d& transform) override;
-  /// Get the robot's position and posture
+  /// Get the robot's position and orientation
   Eigen::Affine3d GetRobotTransform() const override;
 
-  /// Specify the joint name of the robot and input the joint angle
+  /// Specify the robot's joint name and input the joint angle
   void SetNamedAngle(const tmc_manipulation_types::JointState& angle) override;
-  /// Retrieve the robot's joint name and its angle
+  /// Get the robot's joint name and its angle
   tmc_manipulation_types::JointState GetNamedAngle() const override;
-  /// Retrieve the robot's joint name and its angle
+  /// Get the robot's joint name and its angle
   tmc_manipulation_types::JointState GetNamedAngle(const tmc_manipulation_types::NameSeq& joint_names) const override;
 
-  /// Get the object's position and posture
+  /// Get the object's position and orientation
   Eigen::Affine3d GetObjectTransform(const std::string& name) const override;
-  /// Retrieve the object’s relative position and posture
+  /// Get the object's relative position and orientation
   Eigen::Affine3d GetObjectRelativeTransform(const std::string& base_name, const std::string& name) const override;
 
   /// Dynamically add a frame
@@ -79,11 +79,11 @@ class PinocchioWrapper : public IRobotKinematicsModel {
   /// Dynamically delete a frame
   void DestroyFrame(const std::string& frame_name) override;
 
-  /// Get Jacobian
+  /// Get the Jacobian
   Eigen::MatrixXd GetJacobian(const std::string& frame_name,
                               const Eigen::Affine3d& frame_to_end,
                               const std::vector<std::string>& use_joints) override;
-  /// Retrieve joint's Min and Max
+  /// Get the Min and Max of the joint
   void GetMinMax(const tmc_manipulation_types::NameSeq& use_joints,
                  Eigen::VectorXd& min,
                  Eigen::VectorXd& max) const override;
@@ -92,7 +92,7 @@ class PinocchioWrapper : public IRobotKinematicsModel {
   pinocchio::Model model_;
   std::shared_ptr<pinocchio::Data> data_;
 
-  // The Get-type functions that call ExecuteFK are const, but it's efficient to update data_ with ExecuteFK
+  // The Get-type function that calls ExecuteFK is const, but it is efficient to update data_ in ExecuteFK
   // Reluctantly make it mutable
   void ExecuteFK() const;
   mutable bool do_fk_;

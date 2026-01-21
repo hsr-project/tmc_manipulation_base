@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     numeric_ik_sover.hpp
-/// @brief Numerical solution IK solver
+/// @brief    Numerical solution ik solver
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.2.28
@@ -49,21 +49,21 @@ constexpr double kDefaultEpsilon = 1.0e-3;
 constexpr double kDefaultConvergeThreshold = 1.0e-10;
 
 const uint32_t kSE3Dim = 6;
-// Small bias used in Sugihara method from Sugihara 2009
+// Small bias used for Sugihara method from sugihara 2009
 const double kWn = 1e-3;
 
 std::function<bool()> ReturnFalse = []() -> bool{ return false; };
 
 /// Keep joint angles within limits
 /// @param [IN] min Minimum joint angle
-/// @param [IN] max Maximum joint angle
+/// @param [IN] min Maximum joint angle
 /// @param [IN,OUT] angle Joint angle
 void SaturateAngle(const Eigen::VectorXd& min, const Eigen::VectorXd& max,
                    const std::vector<bool> is_continuous_joint,
                    Eigen::VectorXd& angle) {
   for (int32_t i = 0; i < angle.size(); ++i) {
     if (is_continuous_joint[i]) {
-      // Since it's unlikely to loop around twice in numerical IK, this should be fine
+      // It should be fine as there is no case of two full rotations in numerical IK
       if (angle(i) > M_PI) {
         angle(i) -= 2.0 * M_PI;
       } else if (angle(i) < -M_PI) {
@@ -86,7 +86,7 @@ void NumericIKSolver::set_robot_description(const std::string& robot_description
   robot_model_ = std::make_shared<PinocchioWrapper>(robot_description);
 }
 
-/// Solve IK numerically fails if use_joints is 6 or less
+/// Solve IK numerically, fails if use_joints is 6 or less
 /// @param [IN] request: IK input
 /// @param [OUT] solution_angle_out: Solution posture
 /// @param [OUT] Solution posture
@@ -99,7 +99,7 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
                origin_to_end_out);
 }
 
-/// Solve IK numerically fails if use_joints is 6 or less
+/// Solve IK numerically, fails if use_joints is 6 or less
 /// @param [IN] request: IK input
 /// @param [IN] interrupt Interrupt function
 /// @param [OUT] solution_angle_out: Solution posture
@@ -116,10 +116,10 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
                origin_to_end_out);
 }
 
-/// Solve IK numerically allowing base movement
+/// Solve IK numerically, allowing base movement
 /// @param [IN] request IK input
 /// @param [OUT] solution_angle_out Solution posture
-/// @param [OUT] origin_to_base_out Solution robot position and posture
+/// @param [OUT] origin_to_base_out Solution robot position posture
 /// @param [OUT] origin_to_end_out Solution posture
 IKResult NumericIKSolver::Solve(const IKRequest& request,
                                 JointState& solution_angle_out,
@@ -132,11 +132,11 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
                origin_to_end_out);
 }
 
-/// Solve IK numerically allowing base movement
+/// Solve IK numerically, allowing base movement
 /// @param [IN] request IK input
 /// @param [IN] interrupt Interrupt function
 /// @param [OUT] solution_angle_out Solution posture
-/// @param [OUT] origin_to_base_out Solution robot position and posture
+/// @param [OUT] origin_to_base_out Solution robot position posture
 /// @param [OUT] origin_to_end_out Solution posture
 IKResult NumericIKSolver::Solve(const IKRequest& request,
                                 std::function<bool()>& interrupt,
@@ -190,7 +190,7 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
   }
 
   Eigen::MatrixXd wn = Eigen::MatrixXd::Identity(total_dof, total_dof);
-  // If weight size matches DOF, weight wn
+  // Apply weight to wn if weight size is the same as DOF
   if (request.weight.size() == static_cast<int32_t>(total_dof)) {
     for (uint32_t i = 0; i < dof; ++i) {
       // Throw exception if weight is negative
@@ -266,7 +266,7 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
           rotational_base_movements[i];
     }
 
-    // Add base movement jacobian
+    // Add jacobian for base movement
     if (request.use_joints.empty()) {
       if (linear_base_movements.empty()) {
         if (rotational_base_movements.empty()) {
@@ -311,14 +311,14 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
                   + kWn * wn).inverse()
         * jacobian_with_base.transpose() * diff;
     current_joint.position += angle_diff.head(dof);
-    // Modified to respect joint angle limits
+    // Modified to adhere to joint angle limits
     SaturateAngle(angle_min, angle_max, is_continuous_joint, current_joint.position);
-    // Calculate base position correction
+    // Calculate correction for base position
     Eigen::Vector3d mod_base_pos = Eigen::Vector3d::Zero();
     for (uint32_t i = 0; i < linear_base_movements.size(); ++i) {
       mod_base_pos += angle_diff(dof + i) * linear_base_movements[i];
     }
-    // Calculate base rotation correction
+    // Calculate correction for base rotation
     for (uint32_t i = 0; i < rotational_base_movements.size(); ++i) {
       double angle = angle_diff(dof + linear_base_movements.size() + i);
       origin_to_base = origin_to_base *
@@ -337,7 +337,7 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
   return kMaxItr;
 }
 
-/// Solve IK numerically with a maximum of one solution
+/// Solve IK numerically, maximum of 1 solution
 /// @param [IN] request: IK input
 /// @param [OUT] responses_out: IK solution
 IKResult NumericIKSolver::Solve(const IKRequest& request,
@@ -345,7 +345,7 @@ IKResult NumericIKSolver::Solve(const IKRequest& request,
   return Solve(request, ReturnFalse, responses_out);
 }
 
-/// Solve IK numerically with a maximum of one solution
+/// Solve IK numerically, maximum of 1 solution
 /// @param [IN] request: IK input
 /// @param [IN] interrupt Interrupt function
 /// @param [OUT] responses_out: IK solution
@@ -372,7 +372,7 @@ PLUGINLIB_EXPORT_CLASS(tmc_robot_kinematics_model::NumericIKSolver,
                        tmc_robot_kinematics_model::IKSolver)
 
 
-/// @brief Wrapper function for generating IKRequest for ctypes
+/// @brief Wrapper function for ctypes to generate IKRequest
 /// @param [in] movement Base type
 /// @return req_p Pointer to IKRequest
 void* create_request(tmc_manipulation_types::BaseMovementType movement) {
@@ -382,7 +382,7 @@ void* create_request(tmc_manipulation_types::BaseMovementType movement) {
   return req_p;
 }
 
-/// @brief Wrapper function for setting the name of the frame to solve IK for ctypes
+/// @brief Wrapper function for ctypes to set the name of the frame to solve IK
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] frame_name Frame name
 void set_req_frame_name(void* req_p, char* frame_name) {
@@ -391,7 +391,7 @@ void set_req_frame_name(void* req_p, char* frame_name) {
   req->frame_name = frame_name;
 }
 
-/// @brief Wrapper function for setting the transformation from the frame to end coordinates for ctypes
+/// @brief Wrapper function for ctypes to set the transformation from the frame to end coordinates
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] mat Transformation from frame to end coordinates. 4x4 matrix
 void set_req_frame_to_end(void* req_p, double* mat) {
@@ -406,7 +406,7 @@ void set_req_frame_to_end(void* req_p, double* mat) {
   req->frame_to_end.matrix() = matrix;
 }
 
-/// @brief Wrapper function for setting the transformation from origin to base in IKRequest for ctypes
+/// @brief Wrapper function for ctypes to set the transformation from origin to base in IKRequest
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] mat Transformation from origin to base. 4x4 matrix
 void set_req_origin_to_base(void* req_p, double* mat) {
@@ -421,7 +421,7 @@ void set_req_origin_to_base(void* req_p, double* mat) {
   req->origin_to_base.matrix() = matrix;
 }
 
-/// @brief Wrapper function for setting the joint names at the start of IK in IKRequest for ctypes
+/// @brief Wrapper function for ctypes to set the joint names at the start of IK in IKRequest
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] angle_names Joint names
 /// @param [in] num_elements Number of joints to set
@@ -438,7 +438,7 @@ void set_req_initial_angle_name(void* req_p, char* angle_names[], int num_elemen
   req->use_joints = use_name;
 }
 
-/// @brief Wrapper function for setting the joint angle sequence at the start of IK in IKRequest for ctypes
+/// @brief Wrapper function for ctypes to set the joint angle sequence at the start of IK in IKRequest
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] pos Joint angle sequence
 /// @param [in] len_pos Number of joints to set
@@ -452,10 +452,10 @@ void set_req_initial_angle_position(void* req_p, float pos[], int len_pos) {
   }
 }
 
-/// @brief Wrapper function for setting weights in IKRequest for ctypes
+/// @brief Wrapper function for ctypes to set the weight in IKRequest
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] weight Weight array
-/// @param [in] len_weight Length of the weight array
+/// @param [in] len_weight Length of weight array
 void set_req_weight(void* req_p, float weight[], int len_weight) {
   struct tmc_robot_kinematics_model::IKRequest* req =
     reinterpret_cast<struct tmc_robot_kinematics_model::IKRequest*>(req_p);
@@ -465,7 +465,7 @@ void set_req_weight(void* req_p, float weight[], int len_weight) {
   }
 }
 
-/// @brief Wrapper function for setting the transformation from origin to end coordinates in IKRequest for ctypes
+/// @brief Wrapper function for ctypes to set the transformation from origin to end coordinates in IKRequest
 /// @param [in,out] req_p Pointer to IKRequest
 /// @param [in] mat Transformation from origin to end coordinates. 4x4 matrix
 void set_req_ref_origin_to_end(void* req_p, double* mat) {
@@ -480,8 +480,8 @@ void set_req_ref_origin_to_end(void* req_p, double* mat) {
   req->ref_origin_to_end.matrix() = matrix;
 }
 
-/// @brief Wrapper function to return a pointer to a JointState object for ctypes
-/// @return Pointer to the JointState object
+/// @brief Wrapper function for ctypes to return a pointer to a JointState object
+/// @return Pointer to JointState object
 void* jointstate() {
   JointState* js = new JointState;
 
@@ -489,19 +489,19 @@ void* jointstate() {
   return res;
 }
 
-/// @brief Wrapper function to return a pointer to an Affine3d object for ctypes
-/// @return Pointer to the Affine3d object
+/// @brief Wrapper function for ctypes to return a pointer to an Affine3d object
+/// @return Pointer to Affine3d object
 void* affine3d() {
   Eigen::Affine3d* affine3d = new Eigen::Affine3d;
   return reinterpret_cast<void*>(affine3d);
 }
 
-/// @brief Wrapper function to create an IK solver object for ctypes
-/// @param [in] robot_p Pointer to the robot model for IK (tarp3_wrapper)
+/// @brief Wrapper function for ctypes to create an IK solver object
+/// @param [in] robot_p Pointer to robot model for IK (tarp3_wrapper)
 /// @param [in] max_itr Maximum number of iterations
-/// @param [in] epsilon Allowable error
-/// @param [in] converge_threshold Considered converged if change is less than this in one iteration
-/// @return Pointer to the IK solver object
+/// @param [in] epsilon Tolerance
+/// @param [in] converge_threshold Considered converged if change is smaller than this in one iteration
+/// @return Pointer to IK solver object
 void* create_solver(void* robot_p, int max_itr,
                     float epsilon, float converge_threshold) {
   tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr* robot =
@@ -519,12 +519,12 @@ void* create_solver(void* robot_p, int max_itr,
   return reinterpret_cast<void*>(numeric_solver);
 }
 
-/// @brief Wrapper function for solving IK for ctypes
-/// @param [in] solver_p Pointer to the solver
-/// @param [out] solution_p Pointer to the result joint angle sequence of solved IK
-/// @param [out] origin_to_base_solution_p Pointer to the result transformation from origin to base of solved IK
-/// @param [out] origin_to_hand_result_p Pointer to the result transformation from origin to hand of solved IK
-/// @param [out] req_p Pointer to the request
+/// @brief Wrapper function for ctypes to solve IK
+/// @param [in] solver_p Pointer to solver
+/// @param [out] solution_p Pointer to joint angle sequence result of IK
+/// @param [out] origin_to_base_solution_p Pointer to transformation from origin to base result of IK
+/// @param [out] origin_to_hand_result_p Pointer to transformation from origin to hand result of IK
+/// @param [out] req_p Pointer to request
 void solve(void* solver_p, void* solution_p,
            void* origin_to_base_solution_p,
            void* origin_to_hand_result_p,
@@ -551,8 +551,8 @@ void solve(void* solver_p, void* solution_p,
   }
 }
 
-/// @brief Wrapper function to return the joint angle sequence result of solved IK for ctypes
-/// @param [in] sol_p Pointer to the joint angle sequence (JointState)
+/// @brief Wrapper function for ctypes to return the joint angle sequence result of IK
+/// @param [in] sol_p Pointer to joint angle sequence (JointState)
 /// @param [out] result Joint angle sequence
 /// @param [in] len Number of joints used
 void get_joint_angle(void* sol_p,
@@ -564,8 +564,8 @@ void get_joint_angle(void* sol_p,
   }
 }
 
-/// @brief Wrapper function to return the transformation from origin to base result of solved IK for ctypes
-/// @param [in] origin_to_base Pointer to the transformation from origin to base (Affine3d)
+/// @brief Wrapper function for ctypes to return the transformation from origin to base result of IK
+/// @param [in] origin_to_base Pointer to transformation from origin to base (Affine3d)
 /// @param [out] result Transformation from origin to base (4x4 matrix (serialized))
 void get_origin_to_base(void* origin_to_base,
                         double* result) {

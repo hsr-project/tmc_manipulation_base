@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     collision_detector.hpp
-/// @brief    Interface class for interference detection
+/// @brief    Interference detection interface class
 /// @author   Keisuke Takeshita
 /// @version  1.0.0
 /// @date     2012.05.24
@@ -51,7 +51,7 @@ DAMAGE.
 namespace tmc_collision_detector {
 using PairString = std::pair<std::string, std::string>;
 
-/// Structure to insert nearest objects, nearby points, and distance
+/// Structure to store the nearest object, nearby point, and distance
 struct ClosestResult {
   std::string name;  /// Name of the nearby object
   bool contact;  /// True if in contact
@@ -60,277 +60,288 @@ struct ClosestResult {
   Eigen::Vector3d closest_point_on_B;  /// Nearby point on the nearby object
   Eigen::Vector3d normal_on_B;  // Normal on B
 };
-/// Interface class for interference checking
+/// Interference check interface class
 class ICollisionDetector {
  public:
   using Ptr = std::shared_ptr<ICollisionDetector>;
 
   virtual ~ICollisionDetector() {}
 
-  /// @brief Object creation
-  /// @param  [in,out] parameter Information of the object
+  /// @brief Create an object
+  /// @param  [in,out] parameter Object information
   /// @par Behavior:
-  /// - Check if parameter.shape.dimensions is non-negative. If negative, throw exception InvalidShapeParamError.
+  /// - Check if parameter.shape.dimensions is non-negative. If negative, throw an exception InvalidShapeParamError.
   /// - Create a primitive according to parameter.shape.type.
-  /// - For meshes, if unable to read stl file, throw exception InvalidShapeParamError.
-  /// - If type is not any value of CollisionObjectType, throw exception NonExistTypeError.
-  /// - Set position orientation according to parameter.transform.
-  /// - Set object's filter/group according to parameter.filter and parameter.group.
+  /// - In the case of a mesh, if the stl file cannot be read, throw an exception InvalidShapeParamError.
+  /// - If type is not one of the values of CollisionObjectType, throw an exception NonExistTypeError.
+  /// - Set the position and orientation according to parameter.transform.
+  /// - Set the object's filter/group according to parameter.filter, parameter.group.
   virtual void CreateObject(
       const tmc_manipulation_types::ObjectParameter& parameter) = 0;
 
-  /// @brief Retrieve information of the object
+  /// @brief  Retrieve object information
   /// @param  [in] name Name of the object to retrieve
-  /// @return ObjectParameter Information of the object
+  /// @return ObjectParameter Object information
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Return information of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Return the object information.
   virtual tmc_manipulation_types::ObjectParameter GetObjectParameter(
       const std::string& name) const = 0;
 
-  /// @brief Retrieve AABB of the object
+  /// @brief  Retrieve the object's AABB
   /// @param  [in] name Name of the object to retrieve
-  /// @return AABB AABB of the object [xmin xmax; ymin ymax; zmin zmax]
+  /// @return AABB Object's AABB [xmin xmax; ymin ymax; zmin zmax]
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Retrieve AABB.
-  /// - Store the retrieved AABB and return.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Retrieve the AABB.
+  /// - Store and return the retrieved AABB.
   virtual tmc_manipulation_types::AABB GetObjectAABB(
       const std::string& name) const = 0;
 
 
-  /// @brief Dispose of the object
-  /// @param  [in] name Name of the object to dispose
+  /// @brief  Destroy the object
+  /// @param  [in] name Name of the object to destroy
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Dispose of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Destroy the object.
   virtual void DestroyObject(const std::string& name) = 0;
 
 
-  /// @brief Dispose all objects behind the anchor (excluding the anchor)
+  /// @brief  Destroy all objects after the anchor (excluding the anchor)
   /// @par Behavior:
-  /// - Check if the anchor is set. If not set, throw exception.
-  /// - Sequentially dispose of objects behind the anchor.
+  /// - Check if the anchor is set. If not set, throw an exception.
+  /// - Sequentially destroy objects after the anchor.
   /// - If the anchor is the last object, do nothing.
   virtual void DestroyObject(void) = 0;
 
-  /// @brief Set the current last object as the anchor
+  /// @brief  Set the current last object as the anchor
   /// @par Behavior:
-  /// - Confirm if there are objects in the environment. If none exist, throw exception.
+  /// - Check if objects exist in the environment. If not, throw an exception.
   /// - Set the last object as the anchor.
   virtual void SetAnchor(void) = 0;
 
-  /// @brief Set position orientation of the object
-  /// @param  [in] transform Position orientation to set
+  /// @brief  Set the position and orientation of the object
+  /// @param  [in] transform Position and orientation to set
   /// @param  [in] name Name of the object to set
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Update position orientation of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Update the position and orientation of the object.
   virtual void SetObjectTransform(const Eigen::Affine3d &transform,
                                   const std::string& name) = 0;
 
-  /// @brief Retrieve position orientation of the object
+  /// @brief  Retrieve the position and orientation of the object
   /// @param  [in] name Name of the object to retrieve
-  /// @return Eigen::Affine3d Retrieved position orientation
+  /// @return Eigen::Affine3d Retrieved position and orientation
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Return position orientation of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Return the position and orientation of the object.
   virtual Eigen::Affine3d GetObjectTransform(
       const std::string& name) const = 0;
 
-  /// @brief Set group of the object
+  /// @brief  Set the group of the object
   /// @param  [in] group Group bit to set
   /// @param  [in] name Name of the object to set
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Set group of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Set the group of the object.
   virtual void SetCollisionGroup(const uint16_t group,
                                  const std::string& name) = 0;
 
-  /// @brief Set filter of the object
+  /// @brief  Set the filter of the object
   /// @param  [in] filter Filter bit to set
   /// @param  [in] name Name of the object to set
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Set filter of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Set the filter of the object.
   virtual void SetCollisionFilter(const uint16_t filter,
                                   const std::string& name) = 0;
 
-  /// @brief Retrieve group of the object
+  /// @brief  Retrieve the group of the object
   /// @param  [in] name Name of the object to retrieve
   /// @return uint16_t Group of the object
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Retrieve group of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Retrieve the group of the object.
   virtual uint16_t GetCollisionGroup(const std::string& name) const = 0;
 
-  /// @brief Retrieve filter of the object
+  /// @brief  Retrieve the filter of the object
   /// @param  [in] name Name of the object to retrieve
   /// @return uint16_t Filter of the object
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
-  /// - Retrieve filter of the object.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
+  /// - Retrieve the filter of the object.
   virtual uint16_t GetCollisionFilter(const std::string& name) const = 0;
 
-  /// @brief Enable collision check for the object
-  /// @param  [in] name Name of the object to enable collision check
+  /// @brief  Enable interference check for the object
+  /// @param  [in] name Name of the object to enable interference check
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
   /// - Enable the object.
   virtual void EnableObject(const std::string& name) = 0;
 
-  /// @brief Disable collision check for the object
-  /// @param  [in] name Name of the object to disable collision check
+  /// @brief  Disable interference check for the object
+  /// @param  [in] name Name of the object to disable interference check
   /// @par Behavior:
-  /// - Search for the object with name name in the list. If not found, throw exception NonCreateError.
+  /// - Search for the object with the name in the list. If not found, throw an exception NonCreateError.
   /// - Disable the object.
   virtual void DisableObject(const std::string& name) = 0;
 
-  /// @brief Add object pair to exclude from collision check in space
-  /// @param  [in] names Pair of object names to exclude from collision check
+  /// @brief  Add object pairs to exclude from interference check in space
+  /// @param  [in] names Pair of object names to exclude from interference check
   /// @par Behavior:
-  /// - Search for objects with names nameA,nameB in the list. If not found, throw exception NonCreateError.
-  /// - Search if the object pair is in the collision check added pair list. If found, remove from collision check added pair list.
-  /// - If not found, add the object pair to the collision check exclusion pair list.
+  /// - Search for the objects with names nameA, nameB in the list. If not found, throw an exception NonCreateError.
+  /// - Search if the object pair is in the interference check addition pair list. If found, remove from the list.
+  /// - If not found, add the object pair to the interference check exclusion pair list.
   /// @attention
-  /// - It can be set to a state that does not perform collision checks regardless of filter or collision check enable/disable.
+  /// - Can set the state to not perform interference check separately from filter and interference check enable/disable.
   /// - By calling ResetCollisionCheckPairList() or specifying with EnableCollisionCheck()
-  ///   you can remove from collision check exclusion pair list.
-  /// - You can further add object pairs that already exist in the collision check exclusion pair list to the list.
+  ///   can remove from the interference check exclusion pair list.
+  /// - Can add object pairs already existing in the interference check exclusion pair list to the list again.
   virtual void DisableCollisionCheck(const std::vector<PairString>& names) = 0;
 
-  /// @brief Add object pair to perform collision check in space
-  /// @param  [in] names Pair of object names to add and perform collision check
+  /// @brief  Add object pairs to perform interference check in space
+  /// @param  [in] names Pair of object names to add for interference check
   /// @par Behavior:
-  /// - Search for objects with names nameA,nameB in the list. If not found, throw exception NonCreateError.
-  /// - Search if the object pair is in the collision check exclusion pair list. If found, remove from collision check exclusion pair list.
-  /// - If not found, add the object pair to the collision check added pair list.
+  /// - Search for the objects with names nameA, nameB in the list. If not found, throw an exception NonCreateError.
+  /// - Search if the object pair is in the interference check exclusion pair list. If found, remove from the list.
+  /// - If not found, add the object pair to the interference check addition pair list.
   /// @attention
-  /// - It can be set to a state that performs collision checks regardless of filter or collision check enable/disable.
+  /// - Can set the state to perform interference check separately from filter and interference check enable/disable.
   /// - By calling ResetCollisionCheckPairList() or specifying with DisableCollisionCheck()
-  ///   you can remove from collision check added pair list.
-  /// - You can further add object pairs that already exist in the collision check added pair list to the list.
+  ///   can remove from the interference check addition pair list.
+  /// - Can add object pairs already existing in the interference check addition pair list to the list again.
   virtual void EnableCollisionCheck(const std::vector<PairString>& names) = 0;
 
-  /// @brief Clear collision check exclusion pair list and collision check added pair list.
+  /// @brief  Clear the interference check exclusion pair list and addition pair list.
   /// @par Behavior:
-  /// - Clear collision check exclusion pair list and collision check added pair list.
+  /// - Clear the interference check exclusion pair list and addition pair list.
   virtual void ResetCollisionCheckPairList() = 0;
 
-  /// @brief Check if two objects are interfering
-  /// @param  [in] nameA Object to perform collision check
-  /// @param  [in] nameB Object to perform collision check
-  /// @return bool Returns the result of the collision check between two objects. Returns true if interfering
+  /// @brief  Check if two objects are interfering
+  /// @param  [in] nameA Object to perform interference check
+  /// @param  [in] nameB Object to perform interference check
+  /// @return bool Result of the interference check between two objects. True if interfering
   /// @par Behavior:
-  /// - Search for objects with names nameA,nameB in the list. If not found, throw exception NonCreateError.
-  /// - Perform collision check between objects.
+  /// - Search for the objects with names nameA, nameB in the list. If not found, throw an exception NonCreateError.
+  /// - Perform interference check between objects.
   /// - Return the result.
   /// @attention
-  /// - Calculation is performed even if object is Disabled.
+  /// - Calculation is performed even if the object is disabled.
   virtual bool CheckCollisionPair(const std::string& nameA,
                                   const std::string& nameB) = 0;
 
-  /// @brief Check if two objects are interfering
-  /// @param  [in] nameA Object to perform collision check
-  /// @param  [in] nameB Object to perform collision check
+  /// @brief  Check if two objects are interfering
+  /// @param  [in] nameA Object to perform interference check
+  /// @param  [in] nameB Object to perform interference check
   /// @param  [out] point Contact point on object nameB
   /// @param  [out] normal Normal from contact point on object nameB to object nameA
-  /// @return bool Returns the result of the collision check between two objects. Returns true if interfering
+  /// @return bool Result of the interference check between two objects. True if interfering
   /// @par Behavior:
-  /// - Search for objects with names nameA,nameB in the list. If not found, throw exception NonCreateError.
-  /// - Perform collision check between objects.
+  /// - Search for the objects with names nameA, nameB in the list. If not found, throw an exception NonCreateError.
+  /// - Perform interference check between objects.
   /// - Return the result.
   /// @attention
-  /// - Calculation is performed even if object is Disabled.
-  /// - If not interfering, 0 is inserted into point,normal
+  /// - Calculation is performed even if the object is disabled.
+  /// - If not interfering, point and normal will contain 0
   virtual bool CheckCollisionPair(const std::string& nameA,
                                   const std::string& nameB,
                                   Eigen::Vector3d& point,
                                   Eigen::Vector3d& normal) = 0;
 
+  /// @brief  Check if two objects are interfering
+  /// @param  [in] nameA Object to perform interference check
+  /// @param  [in] nameB Object to perform interference check
+  /// @param  [out] depth Depth if interfering
+  /// @return bool Result of the interference check between two objects. True if interfering
+  /// @attention
+  /// - Calculation is performed even if the object is disabled.
+  /// - If not interfering, depth will contain 0.0
+  virtual bool CheckCollisionPair(const std::string& nameA,
+                                  const std::string& nameB,
+                                  double& depth) = 0;
 
-  /// @brief Check if objects in space are interfering
-  /// @return bool Returns the result of the collision check of the objects. Returns true if interfering
+  /// @brief  Check if objects in space are interfering
+  /// @return bool Result of the interference check of objects. True if interfering
   /// @par Behavior:
-  /// - Utilize functions of each physics engine to perform collision check of objects in space
-  /// - If interference occurs, stop the collision check there.
+  /// - Use the functions of each physics engine to perform interference check of objects in space
+  /// - If interference occurs, terminate the interference check there.
   /// - Return the result.
   /// @attention
-  /// - If there are one or fewer objects in space, result of collision check will be false.
+  /// - If there is one or fewer objects in space, the result of the interference check will be false.
   virtual bool CheckCollisionSpace(void) = 0;
 
-  /// @brief Check if objects in space are interfering, retrieve names of interfering object pairs
-  /// @param  [out] dst_contact_pair Names of interfering object pairs
-  /// @return bool Returns the result of the collision check of the objects. Returns true if interfering
+  /// @brief  Check if objects in space are interfering and get the names of the interfering object pairs
+  /// @param  [out] dst_contact_pair Pair of names of interfering objects
+  /// @return bool Result of the interference check of objects. True if interfering
   /// @par Behavior:
-  /// - Utilize functions of each physics engine to perform collision check of objects in space.
-  /// - If interference occurs, stop the collision check there.
-  /// - Retrieve names of interfering objects. If names cannot be found, throw exception InvalidObjectContactError.
+  /// - Use the functions of each physics engine to perform interference check of objects in space.
+  /// - If interference occurs, terminate the interference check there.
+  /// - Get the names of the interfering objects. If names are not found, throw an exception InvalidObjectContactError.
   /// - Return the result.
   /// @attention
-  /// - If there are one or fewer objects in space, result of collision check will be false.
-  /// - If result of collision check is false, dst_contact_pair will not be updated.
+  /// - If there is one or fewer objects in space, the result of the interference check will be false.
+  /// - If the result of the interference check is false, dst_contact_pair is not updated.
   virtual bool CheckCollisionSpace(PairString& dst_contact_pair) = 0;
 
-  /// @brief Create a list of pairs of interfering objects
+  /// @brief  Create a list of pairs of interfering objects
   /// @param  [out] dst_contact_pair List of pairs of names of interfering objects
-  /// @return bool Returns the result of the collision check of the objects. Returns true if interfering
+  /// @return bool Result of the interference check of objects. True if interfering
   /// @par Behavior:
-  /// - Utilize functions of each physics engine to perform collision check of objects in space
-  /// - If interference occurs, retrieve names of interfering objects.
-  ///   If names cannot be found, throw exception InvalidObjectContactError.
-  /// - Once collision check of objects in space is finished, return the result.
+  /// - Use the functions of each physics engine to perform interference check of objects in space
+  /// - If interference occurs, get the names of the interfering objects.
+  ///   If names are not found, throw an exception InvalidObjectContactError.
+  /// - Return the result after the interference check of objects in space is completed.
   /// @attention
-  /// - If there are one or fewer objects in space, result of collision check will be false.
-  /// - If result of collision check is false, dst_contact_pair will be empty.
+  /// - If there is one or fewer objects in space, the result of the interference check will be false.
+  /// - If the result of the interference check is false, dst_contact_pair will be empty.
   virtual bool GetContactPairList(
       std::vector<PairString>& dst_contact_pair) = 0;
 
-  /// @brief Retrieve distance between two objects
-  /// @param  [in] nameA Object to perform collision check
-  /// @param  [in] nameB Object to perform collision check
-  /// @return ClosestResult Returns the result of the collision check of two objects.
+  /// @brief  Retrieve the distance between two objects
+  /// @param  [in] nameA Object to perform interference check
+  /// @param  [in] nameB Object to perform interference check
+  /// @return ClosestResult Result of the interference check between two objects.
   /// @par Behavior:
-  /// - Search for objects with names nameA,nameB in the list. If not found, throw exception NonCreateError.
-  /// - Calculate distance between objects.
+  /// - Search for the objects with names nameA, nameB in the list. If not found, throw an exception NonCreateError.
+  /// - Calculate the distance between objects.
   /// @attention
-  /// - Calculation is performed even if object is Disabled.
+  /// - Calculation is performed even if the object is disabled.
   virtual ClosestResult GetClosestResult(const std::string& nameA,
                                          const std::string& nameB) = 0;
 
-  /// @brief For a certain object, retrieve information of the nearest object among objects in space
-  /// @param  [in] name Name of the object to retrieve nearby object
-  /// @param  [in] extend_length Upper limit of distance to nearby object
-  /// @param  [in] top_n Number of objects for which the exact distance is calculated using the GJK algorithm
-  /// @param  [in] filter Filter for SpaceCollideResult nearby object to check
-  /// @return ClosestResult Names, distance, nearby points of nearby object.
+  /// @brief  Retrieve information of the nearest object in space for a given object
+  /// @param  [in] name Name of the object for which to retrieve the nearest object
+  /// @param  [in] extend_length Upper limit of the distance to the nearest object
+  /// @param  [in] top_n Number of objects for which to calculate the exact distance using the GJK algorithm
+  /// @param  [in] filter Filter for checking nearby objects in SpaceCollideResult
+  /// @return ClosestResult Name, distance, and nearby point of the nearest object.
   /// @par Behavior:
-  /// - Check if object is created, enabled, extend_length is positive, top_n is 1 or higher,
-  ///   filter is not 0, and throw exception if any value is invalid.
-  /// - Retrieve AABB of the object and create a box extend_object that is expanded by extend_length.
-  /// - Set filter to extend_object's filter.
-  /// - Disable object.
-  /// - Perform collision check between extend_object and objects in space. Sort collision check results by distance between objects.
-  /// - Enable object.
-  /// - Dispose of extend_object.
-  /// - Determine distance for up to top_n closest objects from object.
-  /// - Return name, distance, and nearby points of the closest object in space to object.
+  /// - Check if the object is created, enabled, extend_length is positive, top_n is 1 or more,
+  ///   and filter is not 0. If invalid, throw an exception.
+  /// - Retrieve the object's AABB and create an extended box extend_object by extending it by extend_length.
+  /// - Set the filter of extend_object to filter.
+  /// - Disable the object.
+  /// - Perform interference check between extend_object and objects in space. Sort the results by distance between objects.
+  /// - Enable the object.
+  /// - Destroy extend_object.
+  /// - Calculate the distance to the object for up to top_n closest objects.
+  /// - Return the name, distance, and nearby point of the closest object in space as the result.
   /// @attention
-  /// - If no object interferes with extend_object, ClosestResult.distance becomes extend_length.
-  /// - If object is disabled, name contains object's name.
+  /// - If no objects interfere with extend_object, ClosestResult.distance will be extend_length.
+  /// - If the object is disabled, the name of the object will be in name.
   virtual ClosestResult GetClosestObject(const std::string& name,
                                          double extend_length,
                                          int32_t top_n,
                                          uint16_t filter) = 0;
 
   /// @brief Retrieve the physics engine in use
-  /// @return std::string Physics engine name
+  /// @return std::string Name of the physics engine
   virtual std::string GetEngine() const = 0;
 
-  /// @brief Ray casting function
-  /// @param  [in] start_point Start point of the ray
-  /// @param  [in] direction Ray direction vector
-  /// @param  [in] length Ray length
+  /// @brief  Ray casting function
+  /// @param  [in] start_point Starting point of the ray
+  /// @param  [in] direction Direction vector of the ray
+  /// @param  [in] length Length of the ray
   /// @param  [out] end_point Coordinates on the object where the ray hit
   /// @param  [out] name Name of the object where the ray hit
   /// @return bool True if collided with an object

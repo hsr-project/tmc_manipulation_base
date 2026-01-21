@@ -42,7 +42,7 @@ DAMAGE.
 #include "tmc_collision_detector/fcl_collision_detector.hpp"
 #include "tmc_collision_detector/ODE_collision_detector.hpp"
 
-// Test whether many objects can be generated
+// Test for generating multiple objects
 #define CREATEOBJECT_CASE6 0
 
 using tmc_manipulation_types::ObjectParameter;
@@ -100,6 +100,8 @@ enum TestCase {
   kNormalCase8,
   kNormalCase9,
   kNormalCase10,
+  kNormalCase11,
+  kNormalCase12,
   kAbnormalCase1,
   kAbnormalCase2,
   kAbnormalCase3,
@@ -112,7 +114,7 @@ class CollisionDetectorTestUtil {
   virtual ~CollisionDetectorTestUtil() {}
 
  protected:
-  // Functional test for each function
+  // Function-specific operation test
   bool CreateObject_(TestCase case_no);
   bool DestroyObject_(TestCase case_no);
   bool UseAnchor_(TestCase case_no);
@@ -236,7 +238,7 @@ bool CollisionDetectorTestUtil::CreateObject_(enum TestCase case_no) {
   }
   try {
     coldet_->CreateObject(parameter);
-    // Verify object creation by checking if information can be obtained from the created objects
+    // Confirm creation by checking if information of generated objects can be retrieved
     const auto param_from_coldet = coldet_->GetObjectParameter(kObjectName);
     EXPECT_EQ(param_from_coldet.name, kObjectName);
     coldet_->CheckCollisionSpace();
@@ -279,7 +281,7 @@ bool CollisionDetectorTestUtil::DestroyObject_(enum TestCase case_no) {
   } catch (...) {
     return false;
   }
-  // Verify object destruction by the inability to obtain object information
+  // Confirm disposal by checking if information of objects cannot be retrieved
   EXPECT_THROW(coldet_->GetObjectParameter(kObjectName), std::domain_error);
   return true;
 }
@@ -630,16 +632,21 @@ bool CollisionDetectorTestUtil::CheckCollisionSpace_(enum TestCase case_no) {
 }
 bool CollisionDetectorTestUtil::GetContactPairList_(enum TestCase case_no) {
   InitializeCollisionDetector_();
-  ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
 
-  for (int32_t i = 0; i < 4; i++) {
+  auto create_object = [&](int32_t i) {
+    ObjectParameter parameter = InitObjectParameter_(kObjectName, kSphere);
     parameter.name = "sphere" + std::to_string(i);
     parameter.filter = kFilter[i];
     parameter.group = kGroup[i];
     parameter.transform.translation() =
         Eigen::Vector3d(kSpaceCoordinate[i][0], kSpaceCoordinate[i][1], 0.0);
     coldet_->CreateObject(parameter);
-  }
+  };
+  create_object(0);
+  coldet_->SetAnchor();
+  create_object(1);
+  create_object(2);
+  create_object(3);
 
   std::vector<PairString> disable_pairs;
   std::vector<PairString> enable_pairs;
@@ -672,7 +679,6 @@ bool CollisionDetectorTestUtil::GetContactPairList_(enum TestCase case_no) {
       coldet_->SetCollisionFilter(kFilter[2], std::string("sphere3"));
       break;
     case kNormalCase6:
-      coldet_->DestroyObject(std::string("sphere0"));
       coldet_->DestroyObject(std::string("sphere1"));
       coldet_->DestroyObject(std::string("sphere2"));
       coldet_->DestroyObject(std::string("sphere3"));
@@ -706,6 +712,22 @@ bool CollisionDetectorTestUtil::GetContactPairList_(enum TestCase case_no) {
       coldet_->SetCollisionFilter(kFilter[2], std::string("sphere3"));
       enable_pairs.push_back(PairString("sphere0", "sphere3"));
       coldet_->EnableCollisionCheck(enable_pairs);
+      expect_contact_num = 1;
+      expect_result = true;
+      break;
+    case kNormalCase11:
+      disable_pairs.push_back(PairString("sphere0", "sphere2"));
+      coldet_->DisableCollisionCheck(disable_pairs);
+      coldet_->DestroyObject(std::string("sphere2"));
+      create_object(2);
+      expect_contact_num = 2;
+      expect_result = true;
+      break;
+    case kNormalCase12:
+      disable_pairs.push_back(PairString("sphere0", "sphere2"));
+      coldet_->DisableCollisionCheck(disable_pairs);
+      coldet_->DestroyObject();
+      create_object(2);
       expect_contact_num = 1;
       expect_result = true;
       break;
@@ -939,14 +961,14 @@ TYPED_TEST(CollisionDetectorTest, CreateObject) {
   // kNormalCase3: Create a capsule
   // kNormalCase4: Create a cylinder
   // kNormalCase5: Create a mesh
-  // kNormalCase6: Create 10000 boxes
+  // kNormalCase6: Create 10,000 boxes
   // kNormalCase7: Create a mesh (vertex specified)
 
   // kAbnormalCase1: Invalid type
   // kAbnormalCase2: STL file does not exist
   // kAbnormalCase3: STL file is empty
   // kAbnormalCase4: Box parameters do not exist
-  // kAbnormalCase5: Sphere parameter is negative
+  // kAbnormalCase5: Sphere parameters are negative
   EXPECT_TRUE(this->CreateObject_(kNormalCase1));
   EXPECT_TRUE(this->CreateObject_(kNormalCase2));
   EXPECT_TRUE(this->CreateObject_(kNormalCase3));
@@ -962,18 +984,18 @@ TYPED_TEST(CollisionDetectorTest, CreateObject) {
 }
 
 TYPED_TEST(CollisionDetectorTest, DestroyObject) {
-  // kNormalCase1: Create and destroy a primitive
-  // kNormalCase2: Create and destroy a mesh
-  // kAbnormalCase1: Destroy an object that was not created
+  // kNormalCase1: Create and dispose of a primitive
+  // kNormalCase2: Create and dispose of a mesh
+  // kAbnormalCase1: Dispose of an object that was not created
   EXPECT_TRUE(this->DestroyObject_(kNormalCase1));
   EXPECT_TRUE(this->DestroyObject_(kNormalCase2));
   EXPECT_FALSE(this->DestroyObject_(kAbnormalCase1));
 }
 
 TYPED_TEST(CollisionDetectorTest, UseAnchor) {
-  // kNormalCase4: Set the created primitive as an anchor and use the anchor to destroy the object
+  // kNormalCase4: Set created primitive to anchor, then dispose of object using anchor
   // kAbnormalCase2: Set anchor without creating a primitive
-  // kAbnormalCase3: Use anchor to destroy object without setting anchor
+  // kAbnormalCase3: Dispose of object using anchor without setting anchor
 
   EXPECT_TRUE(this->UseAnchor_(kNormalCase4));
   EXPECT_FALSE(this->UseAnchor_(kAbnormalCase2));
@@ -982,14 +1004,14 @@ TYPED_TEST(CollisionDetectorTest, UseAnchor) {
 
 TYPED_TEST(CollisionDetectorTest, SetObjectTransform) {
   // kNormalCase1: Normal case
-  // kAbnormalCase1: Set coordinates for an object not created
+  // kAbnormalCase1: Set coordinates for an object that was not created
   EXPECT_TRUE(this->SetObjectTransform_(kNormalCase1));
   EXPECT_FALSE(this->SetObjectTransform_(kAbnormalCase1));
 }
 
 TYPED_TEST(CollisionDetectorTest, GetObjectTransform) {
   // kNormalCase1: Normal case
-  // kAbnormalCase1: Get coordinates of an object not created
+  // kAbnormalCase1: Get coordinates of an object that was not created
 
   EXPECT_TRUE(this->GetObjectTransform_(kNormalCase1));
   EXPECT_FALSE(this->GetObjectTransform_(kAbnormalCase1));
@@ -999,10 +1021,10 @@ TYPED_TEST(CollisionDetectorTest, ChangeObjectPropertyFunctions) {
   // Fail test for setting category/filter and enabling/disabling object functions
   // kNormalCase1: Normal case for Set/GetCollisionGroup
   // kNormalCase2: Normal case for Set/GetCollisionFilter
-  // kAbnormalCase1: SetCollisionGroup() for an object not created
-  // kAbnormalCase2: SetCollisionFilter() for an object not created
-  // kAbnormalCase3: EnableObject() for an object not created
-  // kAbnormalCase4: DisableObject() for an object not created
+  // kAbnormalCase1: SetCollisionGroup() for an object that was not created
+  // kAbnormalCase2: SetCollisionFilter() for an object that was not created
+  // kAbnormalCase3: EnableObject() for an object that was not created
+  // kAbnormalCase4: DisableObject() for an object that was not created
 
   EXPECT_TRUE(this->ChangeObjectPropertyFunctions_(kNormalCase1));
   EXPECT_TRUE(this->ChangeObjectPropertyFunctions_(kNormalCase2));
@@ -1013,25 +1035,25 @@ TYPED_TEST(CollisionDetectorTest, ChangeObjectPropertyFunctions) {
 }
 
 TYPED_TEST(CollisionDetectorTest, CheckCollision) {
-  // kAbnormalCase1: Interference check for an object not created
-  // kAbnormalCase2: Interference check for an object not created
+  // kAbnormalCase1: Interference check for an object that was not created
+  // kAbnormalCase2: Interference check for an object that was not created
 
   EXPECT_FALSE(this->CheckCollision_(kAbnormalCase1));
   EXPECT_FALSE(this->CheckCollision_(kAbnormalCase2));
 }
 
-// Test if the result of the interference check matches the expected value
-// The distance between two objects
-// 1. X-axis direction, contact distance + kMargin * 3 (no contact)
-// 2. X-axis direction, contact distance + kMargin (no contact)
-// 3. X-axis direction, contact distance - kMargin (contact)
-// 4. Y-axis direction, contact distance + kMargin * 3 (no contact)
-// 5. Y-axis direction, contact distance + kMargin (no contact)
-// 6. Y-axis direction, contact distance - kMargin (contact)
-// 7. Z-axis direction, contact distance + kMargin * 3 (no contact)
-// 8. Z-axis direction, contact distance + kMargin (no contact)
-// 9. Z-axis direction, contact distance - kMargin (contact)
-// Is as follows.
+// Test if the result of interference check matches the expected value
+// The distance between two objects is
+// 1. In the x-axis direction, contact distance + kMargin * 3 (no contact)
+// 2. In the x-axis direction, contact distance + kMargin (no contact)
+// 3. In the x-axis direction, contact distance - kMargin (contact)
+// 4. In the y-axis direction, contact distance + kMargin * 3 (no contact)
+// 5. In the y-axis direction, contact distance + kMargin (no contact)
+// 6. In the y-axis direction, contact distance - kMargin (contact)
+// 7. In the z-axis direction, contact distance + kMargin * 3 (no contact)
+// 8. In the z-axis direction, contact distance + kMargin (no contact)
+// 9. In the z-axis direction, contact distance - kMargin (contact)
+// It is as follows.
 TYPED_TEST(CollisionDetectorTest, ColDetSphereSphere) {
   EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase1, kSphere, kSphere));
   EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase2, kSphere, kSphere));
@@ -1225,23 +1247,23 @@ TYPED_TEST(CollisionDetectorTest, ColDetMeshVerticesMeshVertices) {
   EXPECT_TRUE(this->CheckCollisionHogeHoge_(kNormalCase9, kMeshVertices, kMeshVertices));
 }
 TYPED_TEST(CollisionDetectorTest, CheckCollisionSpace) {
-  // Initial setup:
-  // Arrange four spheres of radius r such that their centers are on the xy-plane
-  // Set all to different groups
-  // No interference with own group
-  // Sphere 1 center (0, 0)
-  // Sphere 2 center (3*r, 0)
-  // Sphere 3 center (0, -1.5*r)
-  // Sphere 4 center (0, 1.5*r)
-  // kNormalCase1: Do not alter any settings, interference will occur
+  // Initial settings:
+  // Arrange four spheres with radius r so that their centers are on the xy-plane
+  // Set to different groups
+  // Do not interfere with their own group
+  // Center of sphere 1 (0, 0)
+  // Center of sphere 2 (3*r, 0)
+  // Center of sphere 3 (0, -1.5*r)
+  // Center of sphere 4 (0, 1.5*r)
+  // kNormalCase1: Do not change any settings, interference occurs
   // kNormalCase2: Disable sphere 1, no interference
-  // kNormalCase3: After disabling sphere 1, enable it again, interference will occur
-  // kNormalCase4: Set the group and filter of sphere 1 the same as sphere 3, interference will occur
-  // kNormalCase5: Set the group and filter of spheres 1 and 4 the same as sphere 3, no interference
-  // kNormalCase6: Destroy spheres 1, 2, 3, 4, no interference
-  // kNormalCase7: Exclude sphere 1 and 4, sphere 1 and 3 from interference check, no interference
-  // kNormalCase8: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, discard exclusion list, interference will occur
-  // kNormalCase9: Set the group and filter of spheres 1, 4 the same as sphere 3 and add to interference check pair, interference will occur
+  // kNormalCase3: Enable sphere 1 after disabling, interference occurs
+  // kNormalCase4: Set group and filter of sphere 1 to be the same as sphere 3, interference occurs
+  // kNormalCase5: Set group and filter of spheres 1 and 4 to be the same as sphere 3, no interference
+  // kNormalCase6: Dispose of spheres 1, 2, 3, and 4, no interference
+  // kNormalCase7: Exclude interference check between sphere 1 and sphere 4, and between sphere 1 and sphere 3, no interference
+  // kNormalCase8: After excluding interference check between sphere 1 and sphere 4, and between sphere 1 and sphere 3, discard exclusion list, interference occurs
+  // kNormalCase9: Set group and filter of spheres 1 and 4 to be the same as sphere 3, add to interference check pair, interference occurs
 
   EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase1));
   EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase2));
@@ -1255,24 +1277,26 @@ TYPED_TEST(CollisionDetectorTest, CheckCollisionSpace) {
   EXPECT_TRUE(this->CheckCollisionSpace_(kNormalCase10));
 }
 TYPED_TEST(CollisionDetectorTest, GetContactPairList) {
-  // Initial setup:
-  // Arrange four spheres of radius r such that their centers are on the xy-plane
-  // Set all to different groups
-  // No interference with own group
-  // Sphere 1 center (0, 0)
-  // Sphere 2 center (3*r, 0)
-  // Sphere 3 center (0, -1.5*r)
-  // Sphere 4 center (0, 1.5*r)
-  // kNormalCase1: Do not alter any settings, interference occurs (2 locations)
+  // Initial settings:
+  // Arrange four spheres with radius r so that their centers are on the xy-plane
+  // Set to different groups
+  // Do not interfere with their own group
+  // Center of sphere 1 (0, 0)
+  // Center of sphere 2 (3*r, 0)
+  // Center of sphere 3 (0, -1.5*r)
+  // Center of sphere 4 (0, 1.5*r)
+  // kNormalCase1: Do not change any settings, interference occurs (2 places)
   // kNormalCase2: Disable sphere 1, no interference
-  // kNormalCase3: After disabling sphere 1, enable it again, interference occurs (2 locations)
-  // kNormalCase4: Set the group and filter of sphere 1 the same as sphere 3, interference occurs (1 location)
-  // kNormalCase5: Set the group and filter of spheres 1, 4 the same as sphere 3, no interference
-  // kNormalCase6: Destroy spheres 1, 2, 3, 4, no interference
-  // kNormalCase7: Exclude sphere 1 and 4, sphere 1 and 3 from interference check, no interference
-  // kNormalCase8: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, enable check for sphere 1 and 3, interference occurs
-  // kNormalCase9: After excluding sphere 1 and 4, sphere 1 and 3 from interference check, discard exclusion list, interference occurs
-  // kNormalCase10: Set the group and filter of spheres 1, 4 the same as sphere 3 and add to interference check pair, interference occurs
+  // kNormalCase3: Enable sphere 1 after disabling, interference occurs (2 places)
+  // kNormalCase4: Set group and filter of sphere 1 to be the same as sphere 3, interference occurs (1 place)
+  // kNormalCase5: Set group and filter of spheres 1 and 4 to be the same as sphere 3, no interference
+  // kNormalCase6: Dispose of spheres 1, 2, 3, and 4, no interference
+  // kNormalCase7: Exclude interference check between sphere 1 and sphere 4, and between sphere 1 and sphere 3, no interference
+  // kNormalCase8: After excluding interference check between sphere 1 and sphere 4, and between sphere 1 and sphere 3, enable check for sphere 1 and sphere 3, interference occurs
+  // kNormalCase9: After excluding interference check between sphere 1 and sphere 4, and between sphere 1 and sphere 3, discard exclusion list, interference occurs
+  // kNormalCase10: Set group and filter of spheres 1 and 4 to be the same as sphere 3, add to interference check pair, interference occurs
+  // kNormalCase11: Exclude interference check between sphere 1 and sphere 3, dispose of sphere 3, then re-add, interference occurs
+  // kNormalCase12: Exclude interference check between sphere 1 and sphere 3, dispose of all except sphere 1, then re-add, interference occurs
 
   EXPECT_TRUE(this->GetContactPairList_(kNormalCase1));
   EXPECT_TRUE(this->GetContactPairList_(kNormalCase2));
@@ -1284,11 +1308,13 @@ TYPED_TEST(CollisionDetectorTest, GetContactPairList) {
   EXPECT_TRUE(this->GetContactPairList_(kNormalCase8));
   EXPECT_TRUE(this->GetContactPairList_(kNormalCase9));
   EXPECT_TRUE(this->GetContactPairList_(kNormalCase10));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase11));
+  EXPECT_TRUE(this->GetContactPairList_(kNormalCase12));
 }
 TYPED_TEST(CollisionDetectorTest, GetClosestObject) {
-  // Initial setup:
-  // Arrange a sphere of radius r such that its center is on the xy-plane
-  // Execute with sphere 1, filter 100
+  // Initial settings:
+  // Arrange a sphere with radius r so that its center is on the xy-plane
+  // Sphere 1, filter 100 applied
   // Sphere 1: Center (0, 0) Category 001 Filter 100
   // Sphere 2: Center (3 * r, 0) Category 010 Filter 100
   // Sphere 3: Center (- 4 * r, 0) Category 100 Filter 011
@@ -1300,16 +1326,16 @@ TYPED_TEST(CollisionDetectorTest, GetClosestObject) {
   // ４            ６
   // ３　１ ２
 
-  // kNormalCase1: Top 3, expansion 5*r → Sphere 3
-  // kNormalCase2: Disable sphere 3, top 3, expansion 5*r → Sphere 4
-  // kNormalCase3: Top 3, expansion 0.5 * r → Not found
-  // kNormalCase4: Disable spheres 3, 4, 5, top 3, expansion 5*r → Not found
-  // kNormalCase5: Top 1, expansion 5*r → Something is found, hopefully sphere 3
-  // kNormalCase6: Execute after disabling sphere 1 → Do nothing
+  // kNormalCase1: Top 3, expand 5*r → Sphere 3
+  // kNormalCase2: Disable sphere 3, top 3, expand 5*r → Sphere 4
+  // kNormalCase3: Top 3, expand 0.5 * r → Not found
+  // kNormalCase4: Disable spheres 3, 4, 5, top 3, expand 5*r → Not found
+  // kNormalCase5: Top 1, expand 5*r → Something is found, hopefully sphere 3
+  // kNormalCase6: Disable sphere 1 before executing → Do nothing
   // kAbnormalCase1: top 0
-  // kAbnormalCase2: Expansion 0
+  // kAbnormalCase2: Expand 0
   // kAbnormalCase3: Filter 0
-  // kAbnormalCase4: Execute after destroying sphere 1
+  // kAbnormalCase4: Dispose of sphere 1 before executing
 
   EXPECT_FALSE(this->GetClosestObject_(kNormalCase1));
 }
@@ -1322,8 +1348,8 @@ TEST_F(ODECollisionDetectorTest, RayCasting) {
   // kNormalCase3: Target capsule
   // kNormalCase4: Target cylinder
   // kNormalCase5: Target mesh
-  // kNormalCase6: No object in the direction of the ray
-  // kNormalCase7: Object exists in the direction of the ray, but far
+  // kNormalCase6: No object exists in the direction of the ray
+  // kNormalCase7: Object exists in the direction of the ray but is far
   // kNormalCase8: Disable object
 
   EXPECT_TRUE(RayCasting_(kNormalCase1));
@@ -1344,6 +1370,105 @@ TEST_F(ODECollisionDetectorTest, GetMeshObjectParameter) {
   EXPECT_EQ(param.shape.vertices.size(), 50);
   EXPECT_EQ(param.shape.indices.size(), 96 * 3);
 }
+
+class FclCollisionDetectorTest : public CollisionDetectorTest<FclCollisionDetector> {
+ protected:
+  void TestPrimitiveCollisionDepth(CollisionObjectType typeA, CollisionObjectType typeB) {
+    InitializeCollisionDetector_();
+
+    std::string object_nameA = kObjectName + std::string("A");
+    std::string object_nameB = kObjectName + std::string("B");
+
+    coldet_->CreateObject(InitObjectParameter_(object_nameA, typeA));
+    coldet_->CreateObject(InitObjectParameter_(object_nameB, typeB));
+
+    // This will result in a displacement that just contacts the translation, so it will penetrate by kMargin
+    Eigen::Vector3d translation = Eigen::Vector3d::Zero();
+    uint16_t object_number;  // Not used, declared to reuse the function
+    SetObjectDistance_(typeA, translation, object_number);
+    SetObjectDistance_(typeB, translation, object_number);
+
+    Eigen::Affine3d object_transform = Eigen::Affine3d::Identity();
+    object_transform.translation() = Eigen::Vector3d(translation.x() - kMargin, 0.0, 0.0);
+    coldet_->SetObjectTransform(object_transform, object_nameA);
+
+    double depth = 0.0;
+    const auto is_in_collision = coldet_->CheckCollisionPair(object_nameA, object_nameB, depth);
+    // Interference depth between primitives will be close to kMargin
+    EXPECT_NEAR(depth, kMargin, 1e-3);
+  }
+
+  void TestMeshCollisionDepth(CollisionObjectType typeA, CollisionObjectType typeB) {
+    InitializeCollisionDetector_();
+
+    std::string object_nameA = kObjectName + std::string("A");
+    std::string object_nameB = kObjectName + std::string("B");
+
+    coldet_->CreateObject(InitObjectParameter_(object_nameA, typeA));
+    coldet_->CreateObject(InitObjectParameter_(object_nameB, typeB));
+
+    Eigen::Vector3d translation = Eigen::Vector3d::Zero();
+    uint16_t object_number;  // Not used, declared to reuse the function
+    SetObjectDistance_(typeA, translation, object_number);
+    SetObjectDistance_(typeB, translation, object_number);
+
+    Eigen::Affine3d object_transform = Eigen::Affine3d::Identity();
+    object_transform.translation() = Eigen::Vector3d(translation.x() - kMargin, 0.0, 0.0);
+    coldet_->SetObjectTransform(object_transform, object_nameA);
+
+    double depth_1 = 0.0;
+    const auto is_in_collision_1 = coldet_->CheckCollisionPair(object_nameA, object_nameB, depth_1);
+
+    object_transform.translation() = Eigen::Vector3d(translation.x() - kMargin / 2.0, 0.0, 0.0);
+    coldet_->SetObjectTransform(object_transform, object_nameA);
+
+    double depth_2 = 0.0;
+    const auto is_in_collision_2 = coldet_->CheckCollisionPair(object_nameA, object_nameB, depth_2);
+
+    EXPECT_TRUE(is_in_collision_1);
+    EXPECT_TRUE(is_in_collision_2);
+    // Since exact values cannot be obtained with mesh, only confirm that the penetration amount should decrease
+    EXPECT_GT(depth_1, depth_2);
+  }
+
+  void TestCollisionDepth(CollisionObjectType typeA, CollisionObjectType typeB) {
+    if ((typeA == kMesh || typeA == kMeshVertices) || (typeB == kMesh || typeB == kMeshVertices)) {
+      TestMeshCollisionDepth(typeA, typeB);
+    } else {
+      TestPrimitiveCollisionDepth(typeA, typeB);
+    }
+  }
+};
+
+TEST_F(FclCollisionDetectorTest, CheckCollisionPair) {
+  TestCollisionDepth(kSphere, kSphere);
+  TestCollisionDepth(kSphere, kBox);
+  TestCollisionDepth(kSphere, kCapsule);
+  TestCollisionDepth(kSphere, kCylinder);
+  TestCollisionDepth(kSphere, kMesh);
+  TestCollisionDepth(kSphere, kMeshVertices);
+
+  TestCollisionDepth(kBox, kBox);
+  TestCollisionDepth(kBox, kCapsule);
+  TestCollisionDepth(kBox, kCylinder);
+  TestCollisionDepth(kBox, kMesh);
+  TestCollisionDepth(kBox, kMeshVertices);
+
+  TestCollisionDepth(kCapsule, kCapsule);
+  TestCollisionDepth(kCapsule, kCylinder);
+  TestCollisionDepth(kCapsule, kMesh);
+  TestCollisionDepth(kCapsule, kMeshVertices);
+
+  TestCollisionDepth(kCylinder, kCylinder);
+  TestCollisionDepth(kCylinder, kMesh);
+  TestCollisionDepth(kCylinder, kMeshVertices);
+
+  TestCollisionDepth(kMesh, kMesh);
+  TestCollisionDepth(kMesh, kMeshVertices);
+
+  TestCollisionDepth(kMeshVertices, kMeshVertices);
+}
+
 }  // namespace tmc_collision_detector
 
 int main(int argc, char* argv[]) {

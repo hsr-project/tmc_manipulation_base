@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     numeric_ik_sover.hpp
-/// @brief    Numerical solution IK solver
+/// @brief    Numerical solution ik solver
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.2.28
@@ -47,11 +47,11 @@ class NumericIKSolver : public IKSolver {
  public:
   NumericIKSolver();
 
-  /// @param [in] successor IK for the next transition with Next
+  /// @param [in] successor IK to be passed next with Next
   /// @param [in] robot_model Robot model
   /// @param [in] max_itr Maximum number of iterations
-  /// @param [in] epsilon Considered as a solution when the error with the target value is less than this
-  /// @param [in] converge_threshold Considered as convergence when the change amount per iteration is less than this
+  /// @param [in] epsilon Considered a solution if the error with the target value is less than this
+  /// @param [in] converge_threshold Considered converged if the change amount per iteration is less than this
   NumericIKSolver(IKSolver::Ptr successor,
                   IRobotKinematicsModel::Ptr robot_model,
                   uint32_t max_itr,

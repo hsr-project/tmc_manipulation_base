@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     ODE_Collision_detector.cpp
-/// @brief Interference detection library using ODE
+/// @brief    Interference detection library using ODE
 /// @author   Keisuke Takeshita
 /// @version  1.0.0
 /// @date     2012.05.24
@@ -60,7 +60,7 @@ class IsEqualName {
   }
   std::string name_;
 };
-/// @brief Compare two std::pair<std::string, std::string>
+/// @brief Compare std::pair<std::string, std::string> with each other
 class IsEqualPairName {
  public:
   explicit IsEqualPairName(const PairString& name) : name_(name) {}
@@ -77,7 +77,7 @@ class IsEqualPairName {
   }
   PairString name_;
 };
-/// @brief Functions for using mesh
+/// @brief  Function for using mesh
 /// @param[in]     in           Vertex coordinates output by tmc_stl_loader
 /// @param[out]    out          std::vector<double>
 void SerializeVertices(const std::vector<Eigen::Vector3f>& in,
@@ -100,7 +100,7 @@ ODECollisionDetector::ODECollisionDetector() {
 }
 /// @brief  Destructor
 /// @par Behavior:
-/// - Destroy objects.
+/// - Destroy object.
 /// - Destroy space.
 /// - Terminate ODE.
 ODECollisionDetector::~ODECollisionDetector() {
@@ -116,7 +116,7 @@ ODECollisionDetector::~ODECollisionDetector() {
   dSpaceDestroy(space_);
   dCloseODE();
 }
-/// @brief  Create object
+/// @brief  Object creation
 void ODECollisionDetector::CreateObject(const ObjectParameter& parameter) {
   for (std::vector<double>::const_iterator it =
       parameter.shape.dimensions.begin();
@@ -164,7 +164,7 @@ void ODECollisionDetector::CreateObject(const ObjectParameter& parameter) {
           throw InvalidShapeParamError(
                      object.shape.filename + " is invalid.");
         }
-        // Get the number of vertices and faces
+        // Get number of vertices and faces
         SerializeVertices(mesh.vertices, object_list_.back().vertices);
         object_list_.back().indices = mesh.indices;
         object_list_.back().mesh_id = dGeomTriMeshDataCreate();
@@ -290,7 +290,7 @@ void ODECollisionDetector::DestroyObject(const std::string& name) {
   }
   throw NonCreateError(name);
 }
-/// @brief  Discard all objects after the anchor (excluding anchor)
+/// @brief  Discard all objects after the anchor (excluding the anchor)
 void ODECollisionDetector::DestroyObject(void) {
   if (anchor_called_ == false) {
     throw std::domain_error("error: not set anchor");
@@ -376,7 +376,7 @@ uint16_t ODECollisionDetector::GetCollisionFilter(
   return static_cast<uint16_t>(
       dGeomGetCollideBits(GetODECollisionObjectConst_(name)->object_id));
 }
-/// @brief  Enable object collision check
+/// @brief  Enable interference check for object
 void ODECollisionDetector::EnableObject(const std::string& name) {
   std::map<std::string, ODECollisionObject*>::iterator it =
       name_map_.find(name);
@@ -385,7 +385,7 @@ void ODECollisionDetector::EnableObject(const std::string& name) {
   }
   dGeomEnable(it->second->object_id);
 }
-/// @brief  Disable object collision check
+/// @brief  Disable interference check for object
 void ODECollisionDetector::DisableObject(const std::string& name) {
   std::map<std::string, ODECollisionObject*>::iterator it =
       name_map_.find(name);
@@ -394,7 +394,7 @@ void ODECollisionDetector::DisableObject(const std::string& name) {
   }
   dGeomDisable(it->second->object_id);
 }
-/// @brief  Add object pairs to exclude from collision check
+/// @brief  Add object pair to exclude from interference check
 void ODECollisionDetector::DisableCollisionCheck(
     const std::vector<PairString>& names) {
   exclusion_list_.reserve(exclusion_list_.size() + names.size());
@@ -417,7 +417,7 @@ void ODECollisionDetector::DisableCollisionCheck(
   }
   add_pair_list_.erase(end_itr, add_pair_list_.end());
 }
-/// @brief  Add object pairs for collision check
+/// @brief  Add object pair for interference check
 void ODECollisionDetector::EnableCollisionCheck(
     const std::vector<PairString>& names) {
   add_pair_list_.reserve(add_pair_list_.size() + names.size());
@@ -436,7 +436,7 @@ void ODECollisionDetector::EnableCollisionCheck(
   }
   exclusion_list_.erase(end_itr, exclusion_list_.end());
 }
-/// @brief  Clear exclusion pair list and addition pair list for collision check.
+/// @brief  Clear interference check exclusion pair list and interference check addition pair list.
 void ODECollisionDetector::ResetCollisionCheckPairList() {
   exclusion_list_.clear();
   add_pair_list_.clear();
@@ -471,6 +471,12 @@ bool ODECollisionDetector::CheckCollisionPair(
     return true;
   }
 }
+/// @brief  Check if two objects are interfering (returns contact depth)
+bool ODECollisionDetector::CheckCollisionPair(
+    const std::string& nameA, const std::string& nameB, double& depth) {
+  // It might be possible to implement with ODE, but since we want to mainstream FCL, we won't try hard
+  throw UnsupportMethodError("ODECollisionDetector::CheckCollisionPair");
+}
 /// @brief  Check if objects in space are interfering
 bool ODECollisionDetector::CheckCollisionSpace(void) {
   SpaceCollideResult space_collide_result;
@@ -493,7 +499,7 @@ bool ODECollisionDetector::CheckCollisionSpace(void) {
   }
   return false;
 }
-/// @brief  Space interference check to obtain names of interfering object pairs
+/// @brief  Space interference check to get names of interfering object pairs
 bool ODECollisionDetector::CheckCollisionSpace(
     PairString& dst_contact_pair) {
   SpaceCollideResult space_collide_result;
@@ -617,7 +623,7 @@ void ODECollisionDetector::RayCastingCallback_(void* data, dGeomID o1,
     }
   }
 }
-/// @brief  Callback for use when terminating the check if interference occurs in CheckCollisionSpace
+/// @brief  Callback used when CheckCollisionSpace, stops checking if interference occurs
 /// @param  [in,out] data SpaceCollideResult
 /// @param  [in] o1 Object ID
 /// @param  [in] o2 Object ID
@@ -645,7 +651,7 @@ void ODECollisionDetector::SpaceCollideCallback_(
     }
   }
 }
-/// @brief  Callback for use when creating list of interfering objects in CheckCollisionSpace
+/// @brief  Callback used when creating a list of interfering objects in CheckCollisionSpace
 /// @param  [in,out] data ContactPairResult
 /// @param  [in] o1 Object ID
 /// @param  [in] o2 Object ID
@@ -661,7 +667,7 @@ void ODECollisionDetector::MakeContactPairListCallback_(
     }
   }
 }
-/// @brief  Obtain ODECollisionObject from object name
+/// @brief  Get ODECollisionObject from object name
 /// @param  [in] name Object name
 std::list<ODECollisionObject>::const_iterator
 ODECollisionDetector::GetODECollisionObjectConst_(
@@ -674,7 +680,7 @@ ODECollisionDetector::GetODECollisionObjectConst_(
   }
   throw NonCreateError(name);
 }
-/// @brief  Obtain ODECollisionObject from object name
+/// @brief  Get ODECollisionObject from object name
 /// @param  [in] name Object name
 std::list<ODECollisionObject>::iterator
 ODECollisionDetector::GetODECollisionObject_(
@@ -687,8 +693,8 @@ ODECollisionDetector::GetODECollisionObject_(
   }
   throw NonCreateError(name);
 }
-/// @brief  Obtain object name from object_list
-/// @param  [in] id Object ID to obtain name
+/// @brief  Get object name from object_list
+/// @param  [in] id ID of the object to get the name
 /// @return std::string Object name
 std::string ODECollisionDetector::GetObjectName_(dGeomID id) const {
   for (std::list<ODECollisionObject>::const_iterator it =

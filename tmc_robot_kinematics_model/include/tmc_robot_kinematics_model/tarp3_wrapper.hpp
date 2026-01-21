@@ -42,7 +42,7 @@ DAMAGE.
 #include "tmc_robot_kinematics_model/robot_kinematics_model.hpp"
 
 namespace tmc_robot_kinematics_model {
-/// The function of tarp3 failed
+/// Function of tarp3 failed
 class Tarp3Error : public std::domain_error {
  public:
   explicit Tarp3Error(const std::string &error) :
@@ -55,9 +55,9 @@ class Tarp3Wrapper : public IRobotKinematicsModel {
   explicit Tarp3Wrapper(const std::string& robot_model_config);
   virtual ~Tarp3Wrapper();
 
-  /// Input the robot's position and orientation
+  /// Input robot's position and orientation
   virtual void SetRobotTransform(const Eigen::Affine3d& transform);
-  /// Get the robot's position and orientation
+  /// Get robot's position and orientation b
   virtual Eigen::Affine3d GetRobotTransform(void) const;
 
   /// Specify the robot's joint name and input the joint angle
@@ -68,9 +68,9 @@ class Tarp3Wrapper : public IRobotKinematicsModel {
   virtual tmc_manipulation_types::JointState GetNamedAngle(
       const tmc_manipulation_types::NameSeq& joint_names) const;
 
-  /// Get the position and orientation of the object
+  /// Get object's position and orientation
   virtual Eigen::Affine3d GetObjectTransform(const std::string& name) const;
-  /// Get the relative position and orientation of the object
+  /// Get object's relative position and orientation
   virtual Eigen::Affine3d GetObjectRelativeTransform(
       const std::string& base_name, const std::string& name) const;
 
@@ -78,13 +78,13 @@ class Tarp3Wrapper : public IRobotKinematicsModel {
   virtual void CreateFrame(const std::string& parent_frame_name,
                            const Eigen::Affine3d& transform,
                            const std::string& new_frame_name);
-  /// Dynamically remove a frame
+  /// Dynamically delete a frame
   virtual void DestroyFrame(const std::string& frame_name);
-  /// Get the Jacobian
+  /// Get Jacobian
   virtual Eigen::MatrixXd GetJacobian(
       const std::string& frame_name, const Eigen::Affine3d& frame_to_end,
       const std::vector<std::string>& use_joints);
-  /// Get the Min and Max of the joint
+  /// Get Min and Max of the joint
   virtual void GetMinMax(const tmc_manipulation_types::NameSeq& use_joints,
                          Eigen::VectorXd& min,
                          Eigen::VectorXd& max) const;
