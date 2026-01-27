@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     manipulation_msg_convertor.cpp
-/// @brief    Message type conversion or inverse conversion library implementation section
+/// @brief    Implementation part of the message type conversion or reverse conversion library
 /// @version  0.1.0
 /// @author   Takao Yasuda
 /// @note     Applied for Partner-Robot Coding Rule(Ver:x.xx)
@@ -64,9 +64,9 @@ void fromMsg(const geometry_msgs::msg::Wrench& in, tmc_manipulation_types::Wrenc
 namespace tmc_manipulation_types_bridge {
 
 /// Split a string by an arbitrary character
-/// @param[in] target_string The string to split
-/// @param[in] delimiter Delimiter (arbitrary character to be used as the split key)
-/// @return Array of split strings (types: vector<string>)
+/// @param[in] target_string The string to be split
+/// @param[in] delimiter Delimiter (arbitrary character used as a split key)
+/// @return Array of split strings (types : vector<string>)
 std::vector<std::string> Split(const std::string& target_string,
                                const char* const delimiter) {
   vector<string> result;
@@ -143,7 +143,7 @@ void JointStateToJointStateMsg(
 }
 
 /// Convert JointPosition to Configure.
-/// @param[in] joint_position JointPositions in ros message type
+/// @param[in] joint_position JointPositions of ros message type
 /// @param[out] common_config_out Configure of type tmc_manipulation_types
 void JointPositionMsgToConfig(
     const tmc_planning_msgs::msg::JointPosition& joint_position,
@@ -509,7 +509,7 @@ void PlannerShapeToMarkerMsg(
       break;
     }
     case(tmc_manipulation_types::kCapsule) : {
-      // Use cylinder as a substitute since there's no capsule
+      // Since there is no capsule, use a cylinder as a substitute
       marker.type = visualization_msgs::msg::Marker::CYLINDER;
       // dimensions[0] is radius.
       marker.scale.x = collision_detector_shape.dimensions.at(0) * 2.0;
@@ -520,7 +520,7 @@ void PlannerShapeToMarkerMsg(
     case(tmc_manipulation_types::kMesh) : {
       // Mesh
       marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-      // Determine if the filename is in URL format
+      // Determine if filename is in URL format
       if ((collision_detector_shape.filename.find("package://") == 0) ||
           (collision_detector_shape.filename.find("file://") == 0) ||
           (collision_detector_shape.filename.find("http://") == 0)) {
@@ -541,7 +541,7 @@ void PlannerShapeToMarkerMsg(
 /// Convert tmc_robot_collision_detector::OuterObjectParameters to visualization_msgs::Marker.
 /// @note For rviz display
 /// @param[in] outer_object_parameters: tmc_robot_collision_detector
-/// @param[in] start_id: Start ID (sequential numbers from start_id due to multiple marker generation)
+/// @param[in] start_id: Start ID (sequential number from start_id due to multiple marker generation)
 /// @param[in] frame_id: Frame ID
 /// @param[in] time: Timestamp
 /// @param[in] color: Color
@@ -569,11 +569,11 @@ void OuterObjectParametersToMarkerMsg(
   }
 }
 
-// /// Convert tmc_manipulation_msgs::CollisionEnvironment's known_object
-// /// to a vector of tmc_robot_collision_detector::OuterObjectParameters
+// /// Convert known_object of tmc_manipulation_msgs::CollisionEnvironment
+// /// to vector of tmc_robot_collision_detector::OuterObjectParameters
 // /// @param[in] collision_environment Environmental information for interference detection
 // /// @param[out] outer_object_seq_out
-// ///             Converts known_object of OuterObjectParameters
+// ///             Converted known_object of OuterObjectParameters
 // /// @par Note : The object name after conversion will be object name_object ID.
 // void CollisionEnvironmentToOuterObjectSeq(
 //     const tmc_manipulation_msgs::CollisionEnvironment& collision_environment,
@@ -595,10 +595,10 @@ void OuterObjectParametersToMarkerMsg(
 //   }
 // }
 
-// /// Convert tmc_manipulation_msgs::CollisionEnvironment's collision_map
-// /// to a vector of tmc_robot_collision_detector::Cuboid
+// /// Convert collision_map of tmc_manipulation_msgs::CollisionEnvironment
+// /// to vector of tmc_robot_collision_detector::Cuboid
 // /// @param[in] collision_environment Environmental information for interference detection
-// /// @param[in] box_name Name of the collision_map
+// /// @param[in] box_name Name of collision_map
 // /// @param[out] cuboid_seq_out Vector of Cuboid, converted from collision_map
 // /// @par Note : The object name after conversion will be name_number (automatically assigned).
 // void CollisionEnvironmentToCuboidSeq(
@@ -657,10 +657,10 @@ void OuterObjectParametersToMarkerMsg(
 // }
 
 // /// Convert tmc_manipulation_msgs::CollisionMap
-// /// to a vector of tmc_robot_collision_detector::Cuboid
+// /// to vector of tmc_robot_collision_detector::Cuboid
 // /// @param[in] collision_map Environmental information for interference detection
-// /// @param[in] box_name Name of the collision_map
-// /// @param[in] origin_to_map Reference coordinates of the collision_map
+// /// @param[in] box_name Name of collision_map
+// /// @param[in] origin_to_map Reference coordinates of collision_map
 // /// @param[out] cuboid_seq_out Vector of Cuboid
 // /// @par Note : The object name after conversion will be name_number (automatically assigned).
 // void CollisionMapToCuboidSeq(
@@ -720,7 +720,7 @@ void OuterObjectParametersToMarkerMsg(
 /// Convert tmc_manipulation_types::BaseMovementType
 /// to tmc_manipulation_msgs::BaseMovementType
 /// @param[in] base_type Base movement type
-/// @param[in] base_type_msgs_out Message of the base movement type
+/// @param[in] base_type_msgs_out Message of base movement type
 void BaseMovementTypeToBaseMovementMsg(
     const tmc_manipulation_types::BaseMovementType& base_type,
     tmc_manipulation_msgs::msg::BaseMovementType& base_type_msgs_out) {
@@ -761,7 +761,7 @@ void BaseMovementTypeToBaseMovementMsg(
 /// Convert tmc_manipulation_types::BaseMovementTypeMsg
 /// to tmc_manipulation_msgs::BaseMovementType
 /// @param[in] base_type Base movement type
-/// @param[in] base_type_msgs_out Message of the base movement type
+/// @param[in] base_type_msgs_out Message of base movement type
 void BaseMovementTypeMsgToBaseMovement(
     const tmc_manipulation_msgs::msg::BaseMovementType& base_type_msg,
     tmc_manipulation_types::BaseMovementType& base_type_out) {
@@ -799,7 +799,7 @@ void BaseMovementTypeMsgToBaseMovement(
   }
 }
 
-/// Convert MultiDOFJointTrajectory to a message
+/// Convert MultiDOFJointTrajectory to message
 /// @param[in] multi_dof_jointtrajectory manipulation type
 /// @param[out] multi_dof_jointtrajectory_msgs_out msg type
 void MultiDOFJointTrajectoryToMultiDOFJointTrajectoryMsg(
@@ -817,7 +817,7 @@ void MultiDOFJointTrajectoryToMultiDOFJointTrajectoryMsg(
   }
 }
 
-/// Convert MultiDOFJointTrajectoryMsg to a common type
+/// Convert MultiDOFJointTrajectoryMsg to common type
 /// @param[in] multi_dof_jointtrajectory_msg msg type
 /// @param[out] multi_dof_jointtrajectory_out manipulation type
 void MultiDOFJointTrajectoryMsgToMultiDOFJointTrajectory(
@@ -836,7 +836,7 @@ void MultiDOFJointTrajectoryMsgToMultiDOFJointTrajectory(
   }
 }
 
-/// Convert TimedJointTrajectory to a message
+/// Convert TimedJointTrajectory to message
 /// @param[in] trajectory Input trajectory.
 /// @param[out] trajectory_msgs_out Output trajectory.
 void TimedJointTrajectoryToJointTrajectoryMsg(
@@ -899,7 +899,7 @@ void JointTrajectoryMsgToTimedJointTrajectory(
   }
 }
 
-/// Convert MultiDOFJointState to a message
+/// Convert MultiDOFJointState to message
 /// @param[in] multi_dof_jointstate manipulation type
 /// @param[out] multi_dof_jointstate_msgs_out msg type
 void MultiDOFJointStateToMultiDOFJointStateMsg(
@@ -920,7 +920,7 @@ void MultiDOFJointStateToMultiDOFJointStateMsg(
       std::bind<geometry_msgs::msg::Wrench(const tmc_manipulation_types::Wrench&)>(toMsg, std::placeholders::_1));
 }
 
-/// Convert MultiDOFJointStateMsg to a common type
+/// Convert MultiDOFJointStateMsg to common type
 /// @param[in] multi_dof_jointstate_msg msg type
 /// @param[out] multi_dof_jointstate_out manipulation type
 void MultiDOFJointStateMsgToMultiDOFJointState(
@@ -944,7 +944,7 @@ void MultiDOFJointStateMsgToMultiDOFJointState(
           fromMsg, std::placeholders::_1, std::placeholders::_2));
 }
 
-/// Convert MultiDOFJointTrajectory to a message
+/// Convert MultiDOFJointTrajectory to message
 /// @param[in] multi_dof_jointtrajectory manipulation type
 /// @param[out] multi_dof_jointtrajectory_msgs_out msg type
 void TimedMultiDOFJointTrajectoryToMultiDOFJointTrajectoryMsg(
@@ -971,7 +971,7 @@ void TimedMultiDOFJointTrajectoryToMultiDOFJointTrajectoryMsg(
   }
 }
 
-/// Convert MultiDOFJointTrajectoryMsg to a common type
+/// Convert MultiDOFJointTrajectoryMsg to common type
 /// @param[in] multi_dof_trajectory_msg msg type
 /// @param[out] multi_dof_trajectory_out manipulation type
 void MultiDOFJointTrajectoryMsgToTimedMultiDOFJointTrajectory(

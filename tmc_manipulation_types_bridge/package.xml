@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_manipulation_types_bridge</name>
-  <version>2.0.1</version>
-  <description>Provide a library for the declaration part of the structure, conversion from the structure to the message type, or reverse transformation.</description>
+  <version>2.0.2</version>
+  <description>Provide a library for the declaration part of the structure, conversion from the structure to the message type, or reverse conversion.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

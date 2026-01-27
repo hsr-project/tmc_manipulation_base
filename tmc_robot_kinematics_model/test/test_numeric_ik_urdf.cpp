@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     test_numeric_ik_urdf.cpp
-/// @brief    Test NumericIKSolver with urdf
+/// @brief    Test of NumericIKSolver in urdf
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.04.09
@@ -41,7 +41,7 @@ DAMAGE.
 
 #include <tmc_manipulation_tests/configs.hpp>
 
-// Include pinocchio headers before boost headers to avoid build failure
+// Include pinocchio headers before boost-related ones to avoid build errors
 #include <tmc_robot_kinematics_model/pinocchio_wrapper.hpp>
 
 #include <tmc_robot_kinematics_model/numeric_ik_solver.hpp>
@@ -69,7 +69,7 @@ constexpr int32_t kItr = 1000;
 
 // Margin for limits
 constexpr double kDeltaJoint = 0.1;
-// Small perturbation given to the hand
+// Small perturbation applied to the hand
 constexpr double kHandDelta = 0.005;
 
 double GetPosition(JointState joint_state, std::string name) {
@@ -86,7 +86,7 @@ double GetPosition(JointState joint_state, std::string name) {
   throw std::invalid_argument("cannot found joint");
 }
 
-/// Calculate the displacement between two postures
+/// Calculate displacement between two postures
 double CalcPoseDiff(const Eigen::Affine3d pose_src,
                     const Eigen::Affine3d pose_dst) {
   Eigen::Matrix<double, 6, 1> diff;
@@ -100,7 +100,7 @@ double CalcPoseDiff(const Eigen::Affine3d pose_src,
 }
 }  // anonymous namespace
 
-/// Test Fixture
+/// Test fixture
 class NumericIKTest : public ::testing::Test {
  protected:
   NumericIKTest() {
@@ -138,7 +138,7 @@ class NumericIKTest : public ::testing::Test {
 
 // Simple case
 TEST_F(NumericIKTest, SimpleCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -167,7 +167,7 @@ TEST_F(NumericIKTest, SimpleCase) {
   EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, hand), kEpsilon);
 }
 
-// Case with infinite rotation joint included
+// Case including infinite rotation joints
 TEST_F(NumericIKTest, ContinuousJoint) {
   JointState state;
   state.name = {"dummy_continuous_joint"};
@@ -192,12 +192,12 @@ TEST_F(NumericIKTest, ContinuousJoint) {
   Eigen::Affine3d result_pose;
   ASSERT_EQ(kSuccess, solver->Solve(req, solution, result_pose));
   EXPECT_LT(CalcPoseDiff(result_pose, goal_pose), kEpsilon);
-  // Due to axis configuration, rotation of 2.5 should be divided between joint6 and dummy_continuous_joint
+  // Due to axis configuration, the rotation of 2.5 should be shared between joint6 and dummy_continuous_joint
   EXPECT_NEAR(solution.position[5], 0.6 + 2.5 / 2.0, 0.05);
   EXPECT_NEAR(solution.position[6], 2.5 / 2.0, 0.05);
 }
 
-// Case with mimic joint included
+// Case including mimic joints
 TEST_F(NumericIKTest, MimicJoint) {
   const auto goal_pose = robot_->GetObjectTransform("dummy_mimic_link");
 
@@ -220,7 +220,7 @@ TEST_F(NumericIKTest, MimicJoint) {
 
 // Exception occurs when specifying a non-existent joint
 TEST_F(NumericIKTest, NoExistJoint) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -249,7 +249,7 @@ TEST_F(NumericIKTest, NoExistJoint) {
 
 // Exception occurs when specifying a non-existent frame
 TEST_F(NumericIKTest, NoExistFrame) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -276,9 +276,9 @@ TEST_F(NumericIKTest, NoExistFrame) {
   EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
 }
 
-// Exception occurs with settings of six degrees of freedom and below
+// Exception occurs with settings of 6 degrees of freedom or less
 TEST_F(NumericIKTest, UnderSixAxis) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -304,9 +304,9 @@ TEST_F(NumericIKTest, UnderSixAxis) {
   EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
 }
 
-// Out of reach, ends with Converge or MaxItr
+// Out of reach ends with Converge or MaxItr
 TEST_F(NumericIKTest, OutOfRange) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(new NumericIKSolver(
       IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -330,7 +330,7 @@ TEST_F(NumericIKTest, OutOfRange) {
   EXPECT_TRUE(responses.empty());
 }
 
-// Interrupt is applied
+// Apply interruption
 TEST_F(NumericIKTest, Interruption) {
   // Solve with out-of-reach input
   IKSolver::Ptr solver(new NumericIKSolver(IKSolver::Ptr(), robot_, kItr, kEpsilon, 0.0));
@@ -351,10 +351,10 @@ TEST_F(NumericIKTest, Interruption) {
   auto end = std::chrono::system_clock::now();
   const auto no_interruption_duration = end - start;
 
-  // Doesn't reach + converge_threshold = 0.0, ends with MaxItr
+  // Ends with MaxItr because it doesn't reach + converge_threshold = 0.0
   EXPECT_EQ(result, kMaxItr);
 
-  // Should exit instantly with interrupt
+  // Should exit instantly with interruption
   std::function<bool()> func = []() -> bool{ return true; };
 
   start = std::chrono::system_clock::now();
@@ -362,13 +362,13 @@ TEST_F(NumericIKTest, Interruption) {
   end = std::chrono::system_clock::now();
 
   EXPECT_EQ(result, kInterruption);
-  // Although kItr multiples should differ, compare with 1/10 for test stability
+  // kItr times should differ, but for test stability, compare at 1/10 of that
   EXPECT_LT(end - start, no_interruption_duration / (kItr / 10));
 }
 
-// Solution using planar movement occurs
+// Solution using planar movement is obtained
 TEST_F(NumericIKTest, PlanarBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -409,9 +409,9 @@ TEST_F(NumericIKTest, PlanarBaseCase) {
   EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, origin_to_hand), kEpsilon);
 }
 
-// Solution using floating movement occurs
+// Solution using floating movement is obtained
 TEST_F(NumericIKTest, FloatBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(
           IKSolver::Ptr(),
@@ -442,9 +442,9 @@ TEST_F(NumericIKTest, FloatBaseCase) {
   EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
 }
 
-// Solution using horizontal X occurs
+// Solution using horizontal X is obtained
 TEST_F(NumericIKTest, RailXBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -480,9 +480,9 @@ TEST_F(NumericIKTest, RailXBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// Solution using horizontal Y occurs
+// Solution using horizontal Y is obtained
 TEST_F(NumericIKTest, RailYBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -518,9 +518,9 @@ TEST_F(NumericIKTest, RailYBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// Solution using horizontal Z occurs
+// Solution using horizontal Z is obtained
 TEST_F(NumericIKTest, RailZBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -556,9 +556,9 @@ TEST_F(NumericIKTest, RailZBaseCase) {
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
 }
 
-// Solution using rotation X occurs
+// Solution using rotation X is obtained
 TEST_F(NumericIKTest, RotationXBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -596,9 +596,9 @@ TEST_F(NumericIKTest, RotationXBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().z(), kEpsilon);
 }
 
-// Solution using rotation Y occurs
+// Solution using rotation Y is obtained
 TEST_F(NumericIKTest, RotationYBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -636,9 +636,9 @@ TEST_F(NumericIKTest, RotationYBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().z(), kEpsilon);
 }
 
-// Solution using rotation Z occurs
+// Solution using rotation Z is obtained
 TEST_F(NumericIKTest, RotationZBaseCase) {
-  // Numeric solution only
+  // Numerical solution only
   IKSolver::Ptr solver(
       new NumericIKSolver(IKSolver::Ptr(),
                           robot_, kItr, kEpsilon, kConvergeThreshold));
@@ -676,7 +676,7 @@ TEST_F(NumericIKTest, RotationZBaseCase) {
   EXPECT_NEAR(0.0, rotation.axis().x(), kEpsilon);
 }
 
-// Loaded as a plugin
+// Load as a plugin
 TEST_F(NumericIKTest, Plugin) {
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver> loader(
       "tmc_robot_kinematics_model", "tmc_robot_kinematics_model::IKSolver");

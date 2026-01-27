@@ -847,7 +847,7 @@ TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeBOX) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeCylinder) {
-  // From this point onwards, tests other than for shapes are omitted
+  // From here on, tests other than shape are omitted
 
   // Ready
   tmc_manipulation_types::Shape collision_detector_shape;
@@ -1212,7 +1212,7 @@ TEST_F(ManipulationTypesBridgeTest, MultiDOFJointStateMsgToMultiDOFJointState) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
-  // Since this is a combination of other transformations, simplify by transformation=>inverse transformation
+  // Since it's a combination of other transformations, we simplify by using transformation => inverse transformation
   tmc_manipulation_types::RobotState robot_state_in;
   robot_state_in.joint_state = GenerateJointState();
   robot_state_in.multi_dof_joint_state = GenerateMultiDOFJointState();
@@ -1248,7 +1248,7 @@ TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, TimedRobotTrajectoryAndRobotTrajectoryMsg) {
-  // Since this is a combination of other transformations, simplify by transformation=>inverse transformation
+  // Since it's a combination of other transformations, we simplify by using transformation => inverse transformation
   tmc_manipulation_types::TimedRobotTrajectory robot_trajectory_in;
   robot_trajectory_in.joint_trajectory = GenerateTimedJointTrajectory();
   robot_trajectory_in.multi_dof_joint_trajectory = GenerateTimedMultiDOFJointTrajectory();

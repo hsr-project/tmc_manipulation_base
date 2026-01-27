@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     utils.cpp
-/// @brief    A group of functions to process the structures exchanged in tmc_manipulation
+/// @brief    Functions to process structures exchanged in tmc_manipulation
 
 #include <tmc_manipulation_types/utils.hpp>
 

@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file collision_detector_factory.cpp
-/// @brief CollisionDetector Generation Class
+/// @brief CollisionDetector creation class
 
 #include <tmc_collision_detector/fcl_collision_detector.hpp>
 #include <tmc_collision_detector/ODE_collision_detector.hpp>
@@ -35,8 +35,8 @@ DAMAGE.
 
 namespace tmc_robot_collision_detector {
 
-/// @brief  Generation of CollisionDetector
-/// @return std::shared_ptr<ICollisionDetector> Collision Check
+/// @brief Creation of CollisionDetector
+/// @return std::shared_ptr<ICollisionDetector> Interference check
 std::shared_ptr<ICollisionDetector>
 
 CollisionDetectorFactory::CreateCollisionDetector() {

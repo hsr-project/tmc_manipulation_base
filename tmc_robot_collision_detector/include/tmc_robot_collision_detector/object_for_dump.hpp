@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file object_for_dump.hpp
-/// @brief Object for saving and loading the robot model
+/// @brief Object for saving and loading robot models
 #ifndef TMC_ROBOT_COLLISION_DETECTOR_OBJECT_FOR_DUMP_HPP_
 #define TMC_ROBOT_COLLISION_DETECTOR_OBJECT_FOR_DUMP_HPP_
 
@@ -52,7 +52,7 @@ template <class Archive> void serialize(Archive& ar,
 }  // namespace boost
 namespace tmc_robot_collision_detector {
 
-/// Structure for dumping
+/// Structure for Dump
 struct DumpChildObjectData {
   tmc_manipulation_types::Shape shape;
   std::vector<double> base_to_child;
@@ -65,7 +65,7 @@ struct DumpChildObjectData {
   }
 };
 
-/// Structure for dumping
+/// Structure for Dump
 struct DumpObjectData {
   std::string name;
   std::vector<double> base_transform;
@@ -90,7 +90,7 @@ struct DumpObjectData {
   }
 };
 
-/// Structure for dumping
+/// Structure for Dump
 struct DumpEnvironmentalData {
   std::string robot_model_config;
   std::string robot_collision_config;

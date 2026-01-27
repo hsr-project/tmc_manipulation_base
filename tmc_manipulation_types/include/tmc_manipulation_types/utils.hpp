@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     utils.hpp
-/// @brief    Function group for processing structures exchanged in tmc_manipulation
+/// @brief Functions to process structures exchanged in tmc_manipulation
 #ifndef TMC_MANIPULATION_TYPES_UTILS_HPP_
 #define TMC_MANIPULATION_TYPES_UTILS_HPP_
 
@@ -36,17 +36,17 @@ DAMAGE.
 
 namespace tmc_manipulation_types {
 
-/// @brief Extracts partial joint_state from joint_state
+/// @brief Extract partial joint_state from joint_state
 /// @param whole_joint_state The entire joint_state of the robot
-/// @param joint_names Joint names to extract
+/// @param joint_names Names of joints to be extracted
 /// @return Extracted partial joint_state
 JointState ExtractPartialJointState(
     const JointState& whole_joint_state,
     const NameSeq& joint_names);
 
-/// @brief Extracts partial joint_trajectory from joint_trajectory
+/// @brief Extract partial joint_trajectory from joint_trajectory
 /// @param whole_joint_state The entire joint_state of the robot
-/// @param joint_names Joint names to extract
+/// @param joint_names Names of joints to be extracted
 /// @return Extracted partial joint_trajectory
 TimedJointTrajectory ExtractPartialJointTrajectory(
     const TimedJointTrajectory& whole_trajectory,

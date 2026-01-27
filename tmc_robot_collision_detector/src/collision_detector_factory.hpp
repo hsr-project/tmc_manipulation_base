@@ -51,7 +51,7 @@ class CollisionDetectorFactory {
   std::shared_ptr<ICollisionDetector> CreateCollisionDetector();
 
  private:
-  /// Name of physics engine to use
+  /// Name of the physics engine to be used
   std::string engine_;
 };
 }  // namespace tmc_robot_collision_detector
