@@ -10,7 +10,10 @@ find_package(Eigen3 REQUIRED)
 
 add_library(pinocchio_wrapper SHARED src/pinocchio_wrapper.cpp)
 target_include_directories(pinocchio_wrapper PUBLIC include ${pinocchio_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
-target_link_libraries(pinocchio_wrapper ${pinocchio_LIBRARIES})
+target_link_libraries(pinocchio_wrapper
+  pinocchio::pinocchio
+)
+
 ament_target_dependencies(pinocchio_wrapper pluginlib tmc_manipulation_types urdf)
 
 add_library(numeric_ik_solver SHARED src/numeric_ik_solver.cpp)
