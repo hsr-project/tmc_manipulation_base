@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -365,9 +365,9 @@ TEST_F(ManipulationTypesBridgeTest, ConvertOccupancyGridMsgToOccupancyGrid) {
   map_msg.info.origin.position.x = 0.4;
   map_msg.info.origin.position.y = 0.5;
   map_msg.info.origin.position.z = 0.6;
-  map_msg.info.origin.orientation.x = 0.7;
-  map_msg.info.origin.orientation.y = 0.8;
-  map_msg.info.origin.orientation.z = 0.9;
+  map_msg.info.origin.orientation.x = 0.0;
+  map_msg.info.origin.orientation.y = 0.0;
+  map_msg.info.origin.orientation.z = 0.0;
   map_msg.info.origin.orientation.w = 1.0;
   map_msg.data = {0, 10, 20, 30, 40, 50};
 
@@ -847,7 +847,7 @@ TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeBOX) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, ConvertPlannerShapeToMarkerMsg_TypeCylinder) {
-  // From here on, tests other than shape are omitted
+  // After this, tests other than shape are omitted
 
   // Ready
   tmc_manipulation_types::Shape collision_detector_shape;
@@ -1212,7 +1212,7 @@ TEST_F(ManipulationTypesBridgeTest, MultiDOFJointStateMsgToMultiDOFJointState) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
-  // Since it's a combination of other transformations, we simplify by using transformation => inverse transformation
+  // Since it is a combination of other transformations, simplify by using transform => inverse transform
   tmc_manipulation_types::RobotState robot_state_in;
   robot_state_in.joint_state = GenerateJointState();
   robot_state_in.multi_dof_joint_state = GenerateMultiDOFJointState();
@@ -1248,7 +1248,7 @@ TEST_F(ManipulationTypesBridgeTest, RobotStateAndRobotStateMsg) {
 }
 
 TEST_F(ManipulationTypesBridgeTest, TimedRobotTrajectoryAndRobotTrajectoryMsg) {
-  // Since it's a combination of other transformations, we simplify by using transformation => inverse transformation
+  // Since it is a combination of other transformations, simplify by using transform => inverse transform
   tmc_manipulation_types::TimedRobotTrajectory robot_trajectory_in;
   robot_trajectory_in.joint_trajectory = GenerateTimedJointTrajectory();
   robot_trajectory_in.multi_dof_joint_trajectory = GenerateTimedMultiDOFJointTrajectory();

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     manipulation_msg_convertor.hpp
-/// @brief    Definition of message type conversion or inverse conversion library
+/// @brief    Definition of the message type conversion or reverse conversion library
 /// @version  0.1.0
 /// @author   Takao Yasuda
 /// @note     Applied for Partner-Robot Coding Rule(Ver:x.xx)
@@ -86,7 +86,7 @@ void ConvertSequence(
   }
 }
 
-/// @brief Convert an array to another array using the covert function (when the input vector is of eigen type)
+/// @brief Convert an array to another array using the covert function (when the input vector is Eigen-based)
 /// @param seq_in Input vector type
 /// @param seq_out Output vector type
 /// @param convert_func Conversion function
@@ -104,7 +104,7 @@ void ConvertSequenceWithEigenIn(
   }
 }
 
-/// Convert an array to another array using the covert function (when the output vector is of eigen type)
+/// Convert an array to another array using the covert function (when the output vector is Eigen-based)
 /// @param seq_in Input vector type
 /// @param seq_out Output vector type
 /// @param convert_func Conversion function

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     numeric_ik_sover.hpp
-/// @brief    Numerical solution ik solver
+/// @brief    Numerical solution IK solver
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.2.28
@@ -47,11 +47,11 @@ class NumericIKSolver : public IKSolver {
  public:
   NumericIKSolver();
 
-  /// @param [in] successor IK to be passed next with Next
+  /// @param [in] successor IK to pass next with Next
   /// @param [in] robot_model Robot model
   /// @param [in] max_itr Maximum number of iterations
   /// @param [in] epsilon Considered a solution if the error with the target value is less than this
-  /// @param [in] converge_threshold Considered converged if the change amount per iteration is less than this
+  /// @param [in] converge_threshold Considered converged if the change per iteration is less than this
   NumericIKSolver(IKSolver::Ptr successor,
                   IRobotKinematicsModel::Ptr robot_model,
                   uint32_t max_itr,
@@ -65,32 +65,7 @@ class NumericIKSolver : public IKSolver {
 
   IKResult Solve(
       const IKRequest& request,
-      tmc_manipulation_types::JointState& solution_angle_out,
-      Eigen::Affine3d& origin_to_end_out) override;
-
-
-  IKResult Solve(
-      const IKRequest& request,
-      tmc_manipulation_types::JointState& solution_angle_out,
-      Eigen::Affine3d& origin_to_base_out,
-      Eigen::Affine3d& origin_to_end_out) override;
-
-  IKResult Solve(
-      const IKRequest& request,
       std::vector<IKResponse>& responses_out) override;
-
-  IKResult Solve(
-      const IKRequest& request,
-      std::function<bool()>& interrupt,
-      tmc_manipulation_types::JointState& solution_angle_out,
-      Eigen::Affine3d& origin_to_end_out) override;
-
-  IKResult Solve(
-      const IKRequest& request,
-      std::function<bool()>& interrupt,
-      tmc_manipulation_types::JointState& solution_angle_out,
-      Eigen::Affine3d& origin_to_base_out,
-      Eigen::Affine3d& origin_to_end_out) override;
 
   IKResult Solve(
       const IKRequest& request,
@@ -98,33 +73,18 @@ class NumericIKSolver : public IKSolver {
       std::vector<IKResponse>& responses_out) override;
 
  private:
+  IKResult SolveImpl(
+      const IKRequest& request,
+      std::function<bool()>& interrupt,
+      tmc_manipulation_types::JointState& solution_angle_out,
+      Eigen::Affine3d& origin_to_base_out,
+      Eigen::Affine3d& origin_to_end_out);
+
   IRobotKinematicsModel::Ptr robot_model_;
   uint32_t max_itr_;
   double epsilon_;
   double converge_threshold_;
 };
 }  // namespace tmc_robot_kinematics_model
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-// wrapper functions for ctypes
-  void* create_solver(void*, int, float, float);
-  void* create_request(tmc_manipulation_types::BaseMovementType);
-  void* jointstate();
-  void* affine3d();
-  void set_req_frame_name(void*, char*);
-  void set_req_initial_angle_name(void*, char*[], int);
-  void set_req_frame_to_end(void*, double*);
-  void set_req_origin_to_base(void*, double*);
-  void set_req_initial_angle_position(void*, float[], int);
-  void set_req_weight(void*, float[], int);
-  void set_req_ref_origin_to_end(void*, double*);
-  void solve(void*, void*, void*, void*, void*);
-  void get_joint_angle(void*, float*, int);
-  void get_origin_to_base(void*, double*);
-#ifdef __cplusplus
-}
-#endif  // __cplusplus
 
 #endif

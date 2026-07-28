@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -49,7 +49,7 @@ DAMAGE.
 
 namespace tmc_collision_detector {
 
-/// Reserve value of the vector storing interference objects, for speedup
+/// Reserve value for the vector storing interference objects, for optimization
 const int32_t kReserveContactPairNum = 1000;
 
 /// Name of ODE
@@ -58,7 +58,7 @@ const char* const kODEName = "ODE";
 using dGeomPair = std::pair<dGeomID, dGeomID>;
 using ExclusionPair = std::pair<PairString, dGeomPair>;
 
-/// CheckCollisionSpace, used to terminate the check when interference occurs
+/// CheckCollisionSpace, used to terminate checks when interference occurs
 struct SpaceCollideResult {
   dContact contact;
   bool result;
@@ -96,16 +96,16 @@ class ODECollisionDetector : public ICollisionDetector {
   /// Object creation
   virtual void CreateObject(
       const tmc_manipulation_types::ObjectParameter& parameter);
-  /// Get object parameters
+  /// Retrieve object parameters
   virtual tmc_manipulation_types::ObjectParameter GetObjectParameter(
       const std::string& name) const;
-  /// Get object AABB
+  /// Retrieve object AABB
   virtual tmc_manipulation_types::AABB GetObjectAABB(
       const std::string& name) const;
 
-  /// Discard object
+  /// Object destruction
   virtual void DestroyObject(const std::string& name);
-  /// Discard all objects behind the anchor (excluding the anchor)
+  /// Destroy all objects behind the anchor (excluding the anchor)
   virtual void DestroyObject(void);
 
   /// Set the current last object as the anchor
@@ -114,7 +114,7 @@ class ODECollisionDetector : public ICollisionDetector {
   /// Set object position and orientation
   virtual void SetObjectTransform(const Eigen::Affine3d &transform,
                                   const std::string& name);
-  /// Get object position and orientation
+  /// Retrieve object position and orientation
   virtual Eigen::Affine3d GetObjectTransform(const std::string& name) const;
 
   /// Set object group
@@ -123,22 +123,22 @@ class ODECollisionDetector : public ICollisionDetector {
   /// Set object filter
   virtual void SetCollisionFilter(const uint16_t filter,
                                   const std::string& name);
-  /// Get object group
+  /// Retrieve object group
   virtual uint16_t GetCollisionGroup(const std::string& name) const;
-  /// Get object filter
+  /// Retrieve object filter
   virtual uint16_t GetCollisionFilter(const std::string& name) const;
 
-  /// Enable interference check for object
+  /// Enable interference check for the object
   virtual void EnableObject(const std::string& name);
-  /// Disable interference check for object
+  /// Disable interference check for the object
   virtual void DisableObject(const std::string& name);
 
-  /// Add object pair to exclude from interference check in space
+  /// Add object pairs to exclude from interference checks in the space
   virtual void DisableCollisionCheck(const std::vector<PairString>& names);
-  /// Add object pair to perform interference check in space
+  /// Add object pairs to perform interference checks in the space
   virtual void EnableCollisionCheck(const std::vector<PairString>& names);
 
-  /// Discard exclusion list
+  /// Clear exclusion list
   virtual void ResetCollisionCheckPairList();
 
   /// Check if two objects are interfering
@@ -154,25 +154,25 @@ class ODECollisionDetector : public ICollisionDetector {
                                   const std::string& nameB,
                                   double& depth);
 
-  /// Check if objects in space are interfering
+  /// Check if objects in the space are interfering
   virtual bool CheckCollisionSpace(void);
-  /// Interference check to get names of interfering object pairs
+  /// Interference check to retrieve names of interfering object pairs
   virtual bool CheckCollisionSpace(PairString& dst_contact_pair);
   /// Create a list of interfering object pairs
   virtual bool GetContactPairList(std::vector<PairString>& dst_contact_pair);
-  /// Get distance between two objects
+  /// Retrieve the distance between two objects
   virtual ClosestResult GetClosestResult(const std::string& nameA,
                                          const std::string& nameB);
-  /// Get information of the nearest object
+  /// Retrieve information of the nearest object
   virtual ClosestResult GetClosestObject(const std::string& name,
                                          double extend_length,
                                          int32_t top_n,
                                          uint16_t filter);
 
-  /// Get the physics engine in use
+  /// Retrieve the physics engine in use
   virtual std::string GetEngine() const {return std::string(kODEName);}
 
-  /// ray casting function
+  /// Ray casting function
   virtual bool RayCasting(const Eigen::Vector3d& start_point,
                           const Eigen::Vector3d& direction,
                           double length,
@@ -188,16 +188,16 @@ class ODECollisionDetector : public ICollisionDetector {
 
   /// Anchor
   std::list<ODECollisionObject>::iterator object_anchor_;
-  /// Flag indicating if the anchor is called
+  /// Flag indicating whether the anchor is called
   bool anchor_called_;
 
-  /// Get ODECollisionObject from object name
+  /// Retrieve ODECollisionObject from object name
   std::list<ODECollisionObject>::const_iterator GetODECollisionObjectConst_(
       const std::string& name) const;
   std::list<ODECollisionObject>::iterator GetODECollisionObject_(
       const std::string& name);
 
-  /// CheckCollisionSpace, used to terminate the check when interference occurs
+  /// CheckCollisionSpace, used to terminate checks when interference occurs
   static void SpaceCollideCallback_(void* data, dGeomID o1, dGeomID o2);
 
   /// CheckCollisionSpace, used to create a list of interfering objects
@@ -206,13 +206,13 @@ class ODECollisionDetector : public ICollisionDetector {
   /// For RayCasting
   static void RayCastingCallback_(void* data, dGeomID o1, dGeomID o2);
 
-  /// Get object name
+  /// Retrieve object name
   std::string GetObjectName_(dGeomID id) const;
 
-  /// List of object pairs to exclude from interference check
+  /// List of object pairs excluded from interference checks
   std::vector<ExclusionPair> exclusion_list_;
 
-  /// List of object pairs to add to interference check
+  /// List of object pairs added for interference checks
   std::vector<PairString> add_pair_list_;
 
   /// Map of names and entities

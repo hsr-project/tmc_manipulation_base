@@ -2,6 +2,15 @@
 Changelog for package tmc_manipulation_types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.0 (2026-06-29)
+-------------------
+* Migration to ROS2 jazzy
+* Contributors: Katsushi Fukuoka, Shigeo Tsuduki
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog for package tmc_manipulation_types
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 2.0.2 (2025-12-04)
 -------------------
 * Fix bug where explicit collision ignore settings for object pairs remained even after objects were destroyed.

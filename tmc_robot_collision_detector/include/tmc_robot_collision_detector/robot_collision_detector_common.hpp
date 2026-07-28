@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file robot_collision_detector_common.hpp
-/// @brief Common settings for interference check using robot model
+/// @brief Common settings for interference checks using a robot model
 #ifndef TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_COMMON_HPP_
 #define TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_COMMON_HPP_
 
@@ -63,7 +63,7 @@ struct BoundingBox {
 enum CuboidOverlapType {
   /// Determine overlap on the XY plane
   kOverlap2DMap = 0,
-  /// Determine overlap with AABB
+  /// Determine overlap using AABB
   kOverlapAabb
 };
 
@@ -71,13 +71,13 @@ enum CuboidOverlapType {
 enum CuboidOverlapGroupType {
   /// Determine overlap for each group of robot parts
   kOverlapGroup = 0,
-  /// Determine overlap with the entire robot's AABB
+  /// Determine overlap using the robot's overall AABB
   kOverlapRobot
 };
 
 /// Search results for nearby objects
 struct ClosestObject {
-  /// Name of the object to search
+  /// Name of the object to search for
   std::string name;
   /// Results within the robot
   tmc_collision_detector::ClosestResult inner_result;
@@ -87,7 +87,7 @@ struct ClosestObject {
 
 /// File type of the robot model
 enum ModelFileType {
-  kTrml,  /// Model in trml (Toyota proprietary format)
+  kTrml,  /// Model in trml (Toyota proprietary format) format
   kUrdf   /// Model in urdf (ROS standard) format
 };
 

@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_manipulation_base</name>
-  <version>2.0.1</version>
-  <description>Packages related to kinematics and collision detection.</description>
+  <version>3.0.0</version>
+  <description>Packages related in kinematics and collision detect.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -76,9 +76,9 @@ enum CollisionObjectType {
   kCylinder,
   /// Capsule
   kCapsule,
-  /// Mesh (specify file name)
+  /// Mesh (specified by file name)
   kMesh,
-  /// Mesh (specify vertices)
+  /// Mesh (specified by vertices)
   kMeshVertices,
 };  // enum CollisionObjectType
 
@@ -92,11 +92,11 @@ struct Shape {
   /// kCylinder: radius, length
   /// kCapsule: radius, length
   std::vector<double> dimensions;
-  /// Path to stl file in case of mesh
+  /// Path to STL file for mesh
   std::string filename;
-  /// Vertices of mesh
+  /// Vertices of the mesh
   std::vector<Eigen::Vector3f> vertices;
-  /// Faces of mesh
+  /// Faces of the mesh
   std::vector<uint32_t> indices;
 };  // struct Shape
 
@@ -132,15 +132,15 @@ typedef std::vector<TaskSpaceRegion, Eigen::aligned_allocator<TaskSpaceRegion> >
   TaskSpaceRegionSeq;
 
 struct AttachedObject {
-  /// object_id Object id
+  /// object_id Object ID
   std::string object_id;
   /// frame_name Name of the link to which the object is attached
   std::string frame_name;
   /// Simultaneous transformation from link to object
   Pose frame_to_object;
-  /// goupid after attach
+  /// Group ID after attach
   std::string group_id;
-  /// Excluded object
+  /// Excluded objects
   std::vector<std::string> expected_objects;
 };  // struct AttachedObject
 
@@ -159,14 +159,14 @@ typedef std::vector<Eigen::Vector3d,
                     Eigen::aligned_allocator<Eigen::Vector3d> > Pose2dSeq;
 typedef std::deque<PoseSeq> MultiDOFPath;
 
-/// Vector of translational and rotational velocities
+/// Vector combining translational and rotational velocities
 typedef std::vector<Twist,
                     Eigen::aligned_allocator<Twist> > TwistSeq;
 /// Vector [force x, force y, force z, torque x, torque y, torque z]
 typedef std::vector<Wrench,
                     Eigen::aligned_allocator<Wrench> > WrenchSeq;
 
-/// Path of joint
+/// Path of the joint
 struct JointTrajectory {
   /// Joint name
   NameSeq names;
@@ -191,7 +191,7 @@ struct JointTrajectory {
   }
 };
 
-/// Path of composite joint
+/// Path of the composite joint
 struct MultiDOFJointTrajectory {
   /// Joint name
   NameSeq names;
@@ -218,7 +218,7 @@ struct MultiDOFJointTrajectory {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// State of composite joint
+/// State of the composite joint
 struct MultiDOFJointState {
   /// Joint name
   NameSeq names;
@@ -234,14 +234,14 @@ struct MultiDOFJointState {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// State of robot
+/// State of the robot
 struct RobotState {
   JointState joint_state;
   MultiDOFJointState multi_dof_joint_state;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// Geometric trajectory of robot
+/// Geometric trajectory of the robot
 struct RobotTrajectory {
   JointTrajectory joint_trajectory;
   MultiDOFJointTrajectory multi_dof_joint_trajectory;
@@ -254,7 +254,7 @@ struct RobotTrajectory {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// Waypoints of joint time trajectory
+/// Waypoints of the joint's time trajectory
 struct TimedJointTrajectoryPoint {
   Eigen::VectorXd positions;
   Eigen::VectorXd velocities;
@@ -267,7 +267,7 @@ struct TimedJointTrajectoryPoint {
 typedef std::deque<TimedJointTrajectoryPoint> TimedJointTrajectoryPointSeq;
 
 
-/// Joint time trajectory (corresponds to ROS)
+/// Time trajectory of the joint (corresponds to ROS)
 struct TimedJointTrajectory {
   NameSeq joint_names;
   TimedJointTrajectoryPointSeq points;
@@ -292,7 +292,7 @@ struct TimedJointTrajectory {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// Waypoints of joint time trajectory
+/// Waypoints of the joint's time trajectory
 struct TimedMultiDOFJointTrajectoryPoint {
   PoseSeq transforms;
   TwistSeq velocities;
@@ -303,7 +303,7 @@ struct TimedMultiDOFJointTrajectoryPoint {
 
 typedef std::deque<TimedMultiDOFJointTrajectoryPoint> TimedMultiDOFJointTrajectoryPointSeq;
 
-/// Composite joint time trajectory (corresponds to ROS)
+/// Time trajectory of the composite joint (corresponds to ROS)
 struct TimedMultiDOFJointTrajectory {
   NameSeq joint_names;
   TimedMultiDOFJointTrajectoryPointSeq points;
@@ -328,7 +328,7 @@ struct TimedMultiDOFJointTrajectory {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-/// Robot time trajectory (corresponds to ROS)
+/// Time trajectory of the robot (corresponds to ROS)
 struct TimedRobotTrajectory {
   TimedJointTrajectory joint_trajectory;
   TimedMultiDOFJointTrajectory multi_dof_joint_trajectory;
@@ -357,7 +357,7 @@ struct OccupancyGrid {
 };
 
 // tmc_robot_collision_detector
-/// Parameters of object for interference check
+/// Parameters of the object for interference check
 struct ObjectParameter {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -407,10 +407,10 @@ typedef std::vector<OuterObjectParameters,
 typedef std::vector<Cuboid, Eigen::aligned_allocator<Cuboid> >
             CuboidSeq;
 
-/// @brief Parameters of external object to be created
+/// @brief Parameters for creating external objects
 /// @attention
 /// - When creating an object
-///   appropriate values must be set for name, base, base_to_child, and shape.
+///   name, base, base_to_child, and shape must have appropriate values.
 /// - Since base is always updated, by obtaining it with GetObjectParameter()
 ///   the position and orientation of the object can also be obtained.
 struct OuterObjectParameters {
@@ -419,26 +419,26 @@ struct OuterObjectParameters {
   OuterObjectParameters() : margin(0.0) {}
   /// Object name
   std::string name;
-  /// Reference pose of object
+  /// Reference pose of the object
   Eigen::Affine3d origin_to_base;
-  /// Pose of child object relative to reference pose
+  /// Pose of the child object relative to the reference pose
   std::vector<Eigen::Affine3d,
               Eigen::aligned_allocator<Eigen::Affine3d> > base_to_child;
-  /// Shape of child object
+  /// Shape of the child object
   std::vector<Shape> shape;
-  /// Margin of object
+  /// Margin of the object
   double margin;
-  /// Name of grasped object
+  /// Name of the grasped object
   std::string parent_name;
-  /// Relative pose from parent
+  /// Relative pose from the parent
   Eigen::Affine3d parent_to_base;
-  /// Name of grasped group
+  /// Name of the grasped group
   std::string parent_group;
-  /// Whether it is a Cuboid
+  /// Whether it is a cuboid
   bool cuboid;
 };
 
-/// @brief Define joint limit
+/// @brief Define joint limits
 struct JointLimits {
   // joint name
   std::string joint_name;
@@ -470,23 +470,23 @@ struct JointLimits {
   double max_effort;
 };
 
-/// @brief Definition of degrees of freedom relative to robot's reference point
-/// Enum for Base operation
+/// @brief Define degrees of freedom relative to the robot's reference point
+/// Enum for base movement
 enum BaseMovementType {
-  kFloat,  /// 6-DOF free floating link
-  kPlanar,  /// Cart model with free x-y-theta in reference coordinate system
-  kRailX,  /// Rail fixed to x-axis of reference coordinate system
-  kRailY,  /// Rail fixed to y-axis of reference coordinate system
-  kRailZ,  /// Rail fixed to z-axis of reference coordinate system
-  kRotationX,  /// Rotation around x-axis of reference coordinate system
-  kRotationY,  /// Rotation around y-axis of reference coordinate system
-  kRotationZ,  /// Rotation around z-axis of reference coordinate system
+  kFloat,  /// 6-DOF free-floating link
+  kPlanar,  /// Cart model with x-y-theta free in the reference frame
+  kRailX,  /// Rail fixed to the x-axis of the reference frame
+  kRailY,  /// Rail fixed to the y-axis of the reference frame
+  kRailZ,  /// Rail fixed to the z-axis of the reference frame
+  kRotationX,  /// Rotation around the x-axis of the reference frame
+  kRotationY,  /// Rotation around the y-axis of the reference frame
+  kRotationZ,  /// Rotation around the z-axis of the reference frame
   kNone,
 };
 
 /// Get degrees of freedom of base_type
-/// @param[in] base_type Degrees of freedom of base
-/// @return Degrees of freedom of base
+/// @param[in] base_type Degrees of freedom of the base
+/// @return Degrees of freedom of the base
 inline uint32_t GetBaseDof(tmc_manipulation_types::BaseMovementType base_type) {
   uint32_t base_dof = 0;
   switch (base_type) {
@@ -523,8 +523,6 @@ inline uint32_t GetBaseDof(tmc_manipulation_types::BaseMovementType base_type) {
   }
   return base_dof;
 }
-
-}  // namespace tmc_manipulation_types
 
 
 template <typename T> std::ostream& SeqOut(std::ostream& os, const T& seq) {
@@ -654,5 +652,7 @@ inline std::ostream& operator<<(
   os << "multi_dof_joint_trajectory: " << traj.multi_dof_joint_trajectory;
   return os;
 }
+
+}  // namespace tmc_manipulation_types
 
 #endif  // TMC_MANIPULATION_TYPES_MANIPULATION_TYPES_HPP_

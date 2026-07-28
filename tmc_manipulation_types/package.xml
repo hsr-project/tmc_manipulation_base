@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_manipulation_types</name>
-  <version>2.0.2</version>
-  <description>Provide a type for converting manipulation messages</description>
+  <version>3.0.0</version>
+  <description>Provide a type for manipulation message conversion.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

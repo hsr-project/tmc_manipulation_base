@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -46,7 +46,7 @@ const char* const kJointName[kJointNameNum] = {
 const char* const kContinuousJointName = "dummy_continuous_joint";
 const double kDoubleEps = 1e-10;
 
-/// Calculate the closeness of two postures
+/// Calculate the proximity of two postures
 /// @param [in] expect Expected posture
 /// @param [in] value  Value to compare
 /// @param [in] angular_eps Allowable angular deviation [rad]
@@ -87,7 +87,7 @@ void RobotKinematicsModelTest<T>::SetUp() {
 
 TYPED_TEST_SUITE_P(RobotKinematicsModelTest);
 
-// URDF is invalid
+// Invalid URDF
 TYPED_TEST_P(RobotKinematicsModelTest, InvalidUrdf) {
   EXPECT_THROW(
       IRobotKinematicsModel::Ptr robot_model_(new TypeParam("invalid urdf")),
@@ -104,7 +104,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, SeparateGenerationAndInitialization) {
   EXPECT_EQ(kTotalJointNum, angles.position.size());
 }
 
-// Initial position/posture of the robot coordinate system is zero
+// Initial position/orientation of the robot coordinate system is zero
 TYPED_TEST_P(RobotKinematicsModelTest, GetInitialRobotTransform) {
   const auto get_transform = this->robot_model_->GetRobotTransform();
   ExpectTransformsNear(Eigen::Affine3d::Identity(), get_transform);
@@ -136,7 +136,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetPartialJointAngles) {
   EXPECT_EQ(angles.position.size(), this->joint_names_.size());
 }
 
-// Exception when reading GetNamedAngle with an arbitrary joint name on the robot
+// Exception when calling GetNamedAngle with an arbitrary joint name on the robot
 TYPED_TEST_P(RobotKinematicsModelTest, ErrorInvalidPartialJointAngles) {
   JointState angles;
   NameSeq invalid_name_seq;
@@ -206,7 +206,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, MimicJoint) {
       "link7", "dummy_mimic_link").linear().eulerAngles(1, 0, 2)[0];
   EXPECT_DOUBLE_EQ(pitch, -0.5 * 0.2 + 1.57);
 
-  // Restore as output is hard to understand when tilted
+  // Reset because the output is hard to understand when tilted
   target_angles.position << 0.0;
   this->robot_model_->SetNamedAngle(target_angles);
 
@@ -238,7 +238,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, InvalidNameSetPartialJointAngles) {
     }, std::domain_error);
 }
 
-// Confirm that an exception is thrown when the length of the name and angle arrays differ
+// Confirm that an exception is thrown when the lengths of the name and angle arrays differ
 TYPED_TEST_P(RobotKinematicsModelTest, UnevenJointstateSetPartialJointAngles) {
   JointState target_angles;
   target_angles.name = this->joint_names_;
@@ -248,7 +248,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, UnevenJointstateSetPartialJointAngles) {
     }, std::domain_error);
 }
 
-// Confirm if the position and posture of the object can be obtained
+// Confirm if the position and orientation of the object can be obtained
 TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransform) {
   std::string name = "link2";
   Eigen::Affine3d origin_to_object;
@@ -259,7 +259,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransform) {
   ExpectTransformsNear(Eigen::Affine3d::Identity(), origin_to_object);
 }
 
-// Confirm if the position and posture of the URDF root link can be obtained
+// Confirm if the position and orientation of the root link in the URDF can be obtained
 TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransformRoot) {
   std::string name = "link1";
   Eigen::Affine3d origin_to_object;
@@ -270,7 +270,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransformRoot) {
   ExpectTransformsNear(origin_to_robot, origin_to_object);
 }
 
-// Confirm if the position and posture of the object through fixed_joint can be obtained
+// Confirm if the position and orientation of an object through a fixed_joint can be obtained
 TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransformFixed) {
   std::string name = "frame1";
   Eigen::Affine3d origin_to_object;
@@ -284,7 +284,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetObjectTransformFixed) {
   ExpectTransformsNear(expected_origin_to_object, origin_to_object);
 }
 
-// Domain error occurs when an invalid name is given to the object
+// domain_error occurs when an invalid object name is given
 TYPED_TEST_P(RobotKinematicsModelTest, InvalidObjectTransform) {
   std::string name = "hoge_piyo";
   Eigen::Affine3d robot_to_object;
@@ -295,7 +295,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, InvalidObjectTransform) {
     }, std::domain_error);
 }
 
-// Confirm if the relative position and posture of the object can be obtained
+// Confirm if the relative position and orientation of the object can be obtained
 TYPED_TEST_P(RobotKinematicsModelTest, GetObjectRelativeTransform) {
   std::string parent_name = "joint3";
   std::string child_name = "joint4";
@@ -308,7 +308,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetObjectRelativeTransform) {
   ExpectTransformsNear(expect_parent_to_child, parent_to_child);
 }
 
-// Confirm if the relative position and posture between the URDF root link and the object can be obtained
+// Confirm if the relative position and orientation between the URDF root link and the object can be obtained
 TYPED_TEST_P(RobotKinematicsModelTest, GetObjectRelativeTransformRoot) {
   std::string root_name = "link1";
   std::string target_name = "link2";
@@ -320,7 +320,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetObjectRelativeTransformRoot) {
   ExpectTransformsNear(Eigen::Affine3d::Identity(), root_to_target);
 }
 
-// Domain error occurs when an invalid name is given to the object
+// domain_error occurs when an invalid object name is given
 TYPED_TEST_P(RobotKinematicsModelTest, InvalidObjectRelativeTransform) {
   std::string parent_name = "joint3";
   std::string child_name = "joint4";
@@ -336,7 +336,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, InvalidObjectRelativeTransform) {
     }, std::domain_error);
 }
 
-// Test for dynamic frame addition
+// Test for adding dynamic frames
 TYPED_TEST_P(RobotKinematicsModelTest, CreateNewFrame) {
   const std::string parent_name = "joint1";
   Eigen::Affine3d parent_to_frame(Eigen::Affine3d::Identity());
@@ -350,7 +350,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, CreateNewFrame) {
   ExpectTransformsNear(parent_to_frame, parent_to_frame_got);
 }
 
-// Dynamic frame addition test failed
+// Test for adding dynamic frames failed
 TYPED_TEST_P(RobotKinematicsModelTest, CreateToInvalidFrame) {
   const std::string parent_name = "hoge_piyo";
   Eigen::Affine3d parent_to_frame(Eigen::Affine3d::Identity());
@@ -361,7 +361,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, CreateToInvalidFrame) {
     }, std::domain_error);
 }
 
-// Dynamic frame deletion
+// Deleting dynamic frames
 TYPED_TEST_P(RobotKinematicsModelTest, DeleteDynamicFrame) {
   const std::string parent_name = "joint1";
   Eigen::Affine3d parent_to_frame(Eigen::Affine3d::Identity());
@@ -377,7 +377,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, DeleteDynamicFrame) {
     }, std::domain_error);
 }
 
-// Dynamic frame deletion failed
+// Deleting dynamic frames failed
 TYPED_TEST_P(RobotKinematicsModelTest, DeleteInvalidFrame) {
   const std::string parent_name = "joint1";
   Eigen::Affine3d parent_to_frame(Eigen::Affine3d::Identity());
@@ -390,7 +390,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, DeleteInvalidFrame) {
     }, std::domain_error);
 }
 
-// Obtain Jacobian
+// Obtaining the Jacobian
 TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianNormal) {
   std::string frame_name("link7");
   Eigen::Affine3d frame_to_end(Eigen::Affine3d::Identity());
@@ -409,7 +409,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianNormal) {
   EXPECT_NEAR(0.0, jacobian(5, 0), kDoubleEps);
 }
 
-// Jacobian changes when the pedestal is moved to obtain Jacobian
+// Obtaining the Jacobian, moving the base, and observing changes in the Jacobian
 TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianRotateLinear) {
   std::string frame_name("link7");
   Eigen::Affine3d frame_to_end(Eigen::Affine3d::Identity());
@@ -431,7 +431,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianRotateLinear) {
   EXPECT_NEAR(0.0, jacobian(5, 0), kDoubleEps);
 }
 
-// Jacobian changes when the pedestal is moved to obtain Jacobian
+// Obtaining the Jacobian, moving the base, and observing changes in the Jacobian
 TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianRotateRotate) {
   std::string frame_name("link7");
   Eigen::Affine3d frame_to_end(Eigen::Affine3d::Identity());
@@ -450,7 +450,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianRotateRotate) {
   EXPECT_NEAR(0.0, jacobian(5, 0), kDoubleEps);
 }
 
-// Non-existent frame obtained when obtaining jacobian
+// Nonexistent frame obtained during Jacobian retrieval
 TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianInvalidFrame) {
   std::string frame_name("hoge_piyo");
   Eigen::Affine3d frame_to_end(Eigen::Affine3d::Identity());
@@ -463,7 +463,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianInvalidFrame) {
     }, std::domain_error);
 }
 
-// Non-existent joint obtained when obtaining jacobian
+// Nonexistent joint obtained during Jacobian retrieval
 TYPED_TEST_P(RobotKinematicsModelTest, GetJacobianInvalidJoint) {
   std::string frame_name("link6");
   Eigen::Affine3d frame_to_end(Eigen::Affine3d::Identity());
@@ -492,7 +492,7 @@ TYPED_TEST_P(RobotKinematicsModelTest, GetJointMinMax) {
   EXPECT_DOUBLE_EQ(0.5, max(1));
 }
 
-// Specify non-existent name when obtaining joint limits
+// Specified a nonexistent name when obtaining joint limits
 TYPED_TEST_P(RobotKinematicsModelTest, GetInvalidJointMinMax) {
   tmc_manipulation_types::NameSeq use_joints;
   use_joints.push_back("hoge_piyo");
