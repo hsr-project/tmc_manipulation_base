@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -38,7 +38,7 @@ namespace tmc_manipulation_types {
 
 /// @brief Extract partial joint_state from joint_state
 /// @param whole_joint_state The entire joint_state of the robot
-/// @param joint_names Names of joints to be extracted
+/// @param joint_names Names of joints to extract
 /// @return Extracted partial joint_state
 JointState ExtractPartialJointState(
     const JointState& whole_joint_state,
@@ -46,7 +46,7 @@ JointState ExtractPartialJointState(
 
 /// @brief Extract partial joint_trajectory from joint_trajectory
 /// @param whole_joint_state The entire joint_state of the robot
-/// @param joint_names Names of joints to be extracted
+/// @param joint_names Names of joints to extract
 /// @return Extracted partial joint_trajectory
 TimedJointTrajectory ExtractPartialJointTrajectory(
     const TimedJointTrajectory& whole_trajectory,

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -145,7 +145,7 @@ FclCollisionDetector::FclCollisionDetector() : anchor_called_(false) {
 FclCollisionDetector::~FclCollisionDetector() {
 }
 
-// Create object
+// Create an object
 void FclCollisionDetector::CreateObject(const tmc_manipulation_types::ObjectParameter& parameter) {
   const auto group_index = ToGroupIndex(parameter.group);
   auto object_with_info = CollisionObjectWithInfo(
@@ -168,7 +168,7 @@ void FclCollisionDetector::CreateObject(const tmc_manipulation_types::ObjectPara
   collision_objects_.insert(std::make_pair(parameter.name, object_with_info));
 }
 
-// Get object parameters
+// Retrieve object parameters
 tmc_manipulation_types::ObjectParameter FclCollisionDetector::GetObjectParameter(const std::string& name) const {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -185,13 +185,13 @@ tmc_manipulation_types::ObjectParameter FclCollisionDetector::GetObjectParameter
   return parameter;
 }
 
-// Get object's AABB
+// Retrieve the object's AABB
 tmc_manipulation_types::AABB FclCollisionDetector::GetObjectAABB(const std::string& name) const {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
     throw std::domain_error("GetObjectAABB error: not exist object name: " + name);
   }
-  // Would like to use computeAABB but it's non-const so can't use it
+  // Would like to use computeAABB, but it's non-const so it can't be used
   it->second.collision_object->computeAABBImproved();
   const auto aabb = it->second.collision_object->getAABB();
   tmc_manipulation_types::AABB result;
@@ -199,7 +199,7 @@ tmc_manipulation_types::AABB FclCollisionDetector::GetObjectAABB(const std::stri
   return result;
 }
 
-// Destroy object
+// Destroy the object
 void FclCollisionDetector::DestroyObject(const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -232,7 +232,7 @@ void FclCollisionDetector::DestroyObject() {
   if (anchor_called_ == false) {
     throw std::domain_error("DestroyObject error: not set anchor");
   }
-  // Initialize non-protected manager
+  // Non-protected manager initialization
   for (auto i = 0u; i < kMaxGroup; ++i) {
     if (!is_protected_[i]) {
       managers_[i]->clear();
@@ -240,10 +240,10 @@ void FclCollisionDetector::DestroyObject() {
     }
   }
 
-  // Flag management is too complex and problematic, but register/unregister of manager is a heavy process so it can't be helped
-  // First, the basic rule is to keep the object if it's protected, otherwise delete it
-  // - If the retained object belongs to a non-protected manager, it was deleted above so register
-  // - If the deleted object belongs to a protected manager, it needs to be removed so unregister
+  // Flag management is overly complex, but register/unregister in the manager is a heavy process, so it can't be helped
+  // First, the basic rule is to keep objects if they are protected, otherwise delete them
+  // - If the retained object belongs to a non-protected manager, it was deleted above, so register it
+  // - If the deleted object belongs to a protected manager, it needs to be removed, so unregister it
   for (auto it = collision_objects_.begin(); it != collision_objects_.end(); ) {
     if (it->second.object_info->is_protected) {
       if (!is_protected_[it->second.object_info->group_index]) {
@@ -259,11 +259,11 @@ void FclCollisionDetector::DestroyObject() {
       it = collision_objects_.erase(it);
     }
   }
-  // Strictly speaking, reset might not be appropriate, but following the conventional behavior of ODE
+  // Strictly speaking, resetting might not be ideal, but it follows the conventional behavior of ODE
   ResetCollisionCheckPairList();
 }
 
-// Make the current last object the anchor
+// Set the current last object as the anchor
 void FclCollisionDetector::SetAnchor() {
   if (collision_objects_.empty()) {
     throw std::domain_error("SetAnchor error: space don't have object");
@@ -271,7 +271,7 @@ void FclCollisionDetector::SetAnchor() {
   anchor_called_ = true;
 }
 
-// Set object's position and orientation
+// Set the position and orientation of the object
 void FclCollisionDetector::SetObjectTransform(const Eigen::Affine3d& transform, const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -282,7 +282,7 @@ void FclCollisionDetector::SetObjectTransform(const Eigen::Affine3d& transform, 
   it->second.object_info->is_pose_changed = true;
 }
 
-// Get object's position and orientation
+// Retrieve the position and orientation of the object
 Eigen::Affine3d FclCollisionDetector::GetObjectTransform(const std::string& name) const {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -291,13 +291,13 @@ Eigen::Affine3d FclCollisionDetector::GetObjectTransform(const std::string& name
   return Eigen::Affine3f(it->second.collision_object->getTransform()).cast<double>();
 }
 
-// Set object's group
+// Set the object's group
 void FclCollisionDetector::SetCollisionGroup(const uint16_t group, const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
     throw std::domain_error("SetCollisionGroup error: not exist object name: " + name);
   }
-  // Since exception check for group is also performed, get group_index first
+  // Since group exception checks are also performed, retrieve the group_index first
   const auto group_index = ToGroupIndex(group);
 
   managers_[it->second.object_info->group_index]->unregisterObject(it->second.collision_object.get());
@@ -308,7 +308,7 @@ void FclCollisionDetector::SetCollisionGroup(const uint16_t group, const std::st
   it->second.object_info->group_index = group_index;
 }
 
-// Set object's filter
+// Set the object's filter
 void FclCollisionDetector::SetCollisionFilter(const uint16_t filter, const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -317,7 +317,7 @@ void FclCollisionDetector::SetCollisionFilter(const uint16_t filter, const std::
   filters_[it->second.object_info->group_index] = std::bitset<kMaxGroup>(filter);
 }
 
-// Get object's group
+// Retrieve the object's group
 uint16_t FclCollisionDetector::GetCollisionGroup(const std::string& name) const {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -326,7 +326,7 @@ uint16_t FclCollisionDetector::GetCollisionGroup(const std::string& name) const 
   return 1 << it->second.object_info->group_index;
 }
 
-// Get object's filter
+// Retrieve the object's filter
 uint16_t FclCollisionDetector::GetCollisionFilter(const std::string& name) const {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -335,7 +335,7 @@ uint16_t FclCollisionDetector::GetCollisionFilter(const std::string& name) const
   return filters_[it->second.object_info->group_index].to_ulong();
 }
 
-// Enable interference check for object
+// Enable collision checking for the object
 void FclCollisionDetector::EnableObject(const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -345,7 +345,7 @@ void FclCollisionDetector::EnableObject(const std::string& name) {
   do_manager_update_[it->second.object_info->group_index] = true;
 }
 
-// Disable interference check for object
+// Disable collision checking for the object
 void FclCollisionDetector::DisableObject(const std::string& name) {
   auto it = collision_objects_.find(name);
   if (it == collision_objects_.end()) {
@@ -355,7 +355,7 @@ void FclCollisionDetector::DisableObject(const std::string& name) {
   do_manager_update_[it->second.object_info->group_index] = true;
 }
 
-// Compare std::pair<std::string, std::string>
+// Compare two std::pair<std::string, std::string>
 class IsEqualPairString {
  public:
   explicit IsEqualPairString(const PairString& names) : names_(names) {}
@@ -372,7 +372,7 @@ class IsEqualPairString {
   PairString names_;
 };
 
-// Add object pair to exclude from interference check in space
+// Add object pairs to exclude from collision checks in the space
 void FclCollisionDetector::DisableCollisionCheck(const std::vector<PairString>& name_pairs) {
   for (const auto& name_pair : name_pairs) {
     auto it = std::find_if(additional_list_.begin(), additional_list_.end(), IsEqualPairString(name_pair));
@@ -388,7 +388,7 @@ void FclCollisionDetector::DisableCollisionCheck(const std::vector<PairString>& 
   }
 }
 
-// Add object pair to perform interference check in space
+// Add object pairs to perform collision checks in the space
 void FclCollisionDetector::EnableCollisionCheck(const std::vector<PairString>& name_pairs) {
   for (const auto& name_pair : name_pairs) {
     auto it = std::find_if(exclusion_list_.begin(), exclusion_list_.end(), IsEqualPairString(name_pair));
@@ -404,20 +404,20 @@ void FclCollisionDetector::EnableCollisionCheck(const std::vector<PairString>& n
   }
 }
 
-// Discard exclusion list
+// Discard the exclusion list
 void FclCollisionDetector::ResetCollisionCheckPairList() {
   exclusion_list_.clear();
   additional_list_.clear();
 }
 
-/// Check if two objects are interfering
+/// Check if two objects are colliding
 bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const std::string& nameB) {
   Eigen::Vector3d point;
   Eigen::Vector3d normal;
   return CheckCollisionPair(nameA, nameB, point, normal);
 }
 
-// Check if two objects are interfering (returns contact information)
+// Check if two objects are colliding (returns contact information)
 bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const std::string& nameB,
                                               Eigen::Vector3d& point, Eigen::Vector3d& normal) {
   const auto contact = CheckCollisionPairImpl(nameA, nameB);
@@ -432,15 +432,15 @@ bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const st
   }
 }
 
-// Check if two objects are interfering (returns contact depth)
+// Check if two objects are colliding (returns contact depth)
 bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const std::string& nameB, double& depth) {
   const auto contact = CheckCollisionPairImpl(nameA, nameB);
   if (contact) {
-    // As long as it passes through CheckCollisionPairImpl, itA and itB must exist
+    // Since it passes through CheckCollisionPairImpl, it is guaranteed that itA and itB exist
     auto itA = collision_objects_.find(nameA);
     auto itB = collision_objects_.find(nameB);
     if (itA->second.object_info->is_mesh && itB->second.object_info->is_mesh) {
-      // In FCL 0.7, depth between meshes is not available, so calculate with AABB as a placeholder
+      // In FCL 0.7, depth between meshes cannot be obtained, so calculate it with AABB as a placeholder
       // This way, changes in depth can be obtained, though not accurately
       // TODO(Takeshita) もう少し正しい計算を実装する
       const auto aabbA = itA->second.collision_object->getAABB();
@@ -450,7 +450,7 @@ bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const st
            std::max(0.0f, std::min(aabbA.max_[1], aabbB.max_[1]) - std::max(aabbA.min_[1], aabbB.min_[1])),
            std::max(0.0f, std::min(aabbA.max_[2], aabbB.max_[2]) - std::max(aabbA.min_[2], aabbB.min_[2]))});
     } else {
-      // In combinations of mesh and primitive, it can be negative; specifically, saw it negative with mesh and sphere
+      // In combinations of meshes and primitives, negative values can occur; specifically, I observed negatives with meshes and spheres
       depth = std::abs(contact->penetration_depth);
     }
     return true;
@@ -460,13 +460,13 @@ bool FclCollisionDetector::CheckCollisionPair(const std::string& nameA, const st
   }
 }
 
-// Check if objects in space are interfering
+// Check if objects in the space are colliding
 bool FclCollisionDetector::CheckCollisionSpace(void) {
   std::vector<PairString> contact_pair;
   return CheckCollisionSpaceImpl(true, contact_pair);
 }
 
-// Interference check to get names of interfering object pairs
+// Collision check to retrieve the names of colliding object pairs
 bool FclCollisionDetector::CheckCollisionSpace(PairString& dst_contact_pair) {
   std::vector<PairString> contact_pair;
   const auto result = CheckCollisionSpaceImpl(true, contact_pair);
@@ -476,7 +476,7 @@ bool FclCollisionDetector::CheckCollisionSpace(PairString& dst_contact_pair) {
   return result;
 }
 
-// Create a list of pairs of interfering objects
+// Create a list of colliding object pairs
 bool FclCollisionDetector::GetContactPairList(std::vector<PairString>& dst_contact_pair) {
   return CheckCollisionSpaceImpl(false, dst_contact_pair);
 }
@@ -590,7 +590,7 @@ std::optional<fcl::Contactf> FclCollisionDetector::CheckCollisionPairImpl(
   if (itB == collision_objects_.end()) {
     throw std::domain_error("CheckCollisionPair error: not exist object name: " + nameB);
   }
-  // ODE's specification is like this, and tests are written based on that assumption, so it can't be helped
+  // This is how ODE is designed, and the tests are written based on this assumption, so it can't be helped
   if (nameA == nameB) {
     return std::nullopt;
   }

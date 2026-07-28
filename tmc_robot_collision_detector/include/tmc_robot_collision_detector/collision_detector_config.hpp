@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file collision_detector_config.hpp
-/// @brief Holds the settings for interference check
+/// @brief Holds the settings for interference checks
 #ifndef TMC_ROBOT_COLLISION_DETECTOR_COLLISION_DETECTOR_CONFIG_HPP_
 #define TMC_ROBOT_COLLISION_DETECTOR_COLLISION_DETECTOR_CONFIG_HPP_
 
@@ -42,7 +42,7 @@ DAMAGE.
 
 namespace tmc_robot_collision_detector {
 
-/// Exception when a non-existent object name is specified
+/// Exception when specifying a non-existent object name
 class NonExistName : public std::domain_error {
  public:
   explicit NonExistName(const std::string& error) :
@@ -52,16 +52,16 @@ class NonExistName : public std::domain_error {
 /// Pair of strings, meaning varies by function
 using PairString = std::pair<std::string, std::string>;
 
-/// Group name of external objects
+/// External object's group name
 const char* const kOuterGroupName = "OUTER";
 
-/// Default group name of collision map
+/// Default group name for collision map
 const char* const kCuboidGroupName = "CUBOID";
 
 /// Maximum number of groups
 const uint32_t kMaxGroupNum = 15;
 
-/// Settings of the interference checker
+/// Settings for interference checker
 class CollisionDetectorConfig {
  public:
   using Ptr = std::shared_ptr<CollisionDetectorConfig>;
@@ -69,103 +69,103 @@ class CollisionDetectorConfig {
   /// @brief Constructor. Reads settings from a configuration file.
   /// @param [in] coldet_config_file Path to the configuration file
   /// @par Behavior:
-  /// - Reads the configuration file and holds the settings as member variables.
+  /// - Reads the configuration file and stores its settings as member variables.
   /// - Throws an exception if the configuration file cannot be read.
   /// - Throws an exception if the number of groups in the configuration file exceeds kMaxGroupNum.
   explicit CollisionDetectorConfig(const std::string& coldet_config_file);
   ~CollisionDetectorConfig() {}
 
-  /// @brief Get the group bit of an object
+  /// @brief Retrieves the group bit of an object
   /// @param [in] object_name Name of the object to retrieve
   /// @return uint16_t Category of the object
   /// @par Behavior:
-  /// - Returns the value of the group bit of the group to which the object belongs.
-  /// - If a non-existent object name is given in the configuration file,
-  ///   returns the value of the group bit of the external object.
+  /// - Returns the group bit value of the group to which the object belongs.
+  /// - If a non-existent object name is provided in the configuration file,
+  ///   returns the group bit value of the external object.
   uint16_t GetGroupBitByObjectName(const std::string& object_name) const;
 
-  /// @brief Get the filter bit of an object
+  /// @brief Retrieves the filter bit of an object
   /// @param [in] object_name Name of the object to retrieve
   /// @return uint16_t Filter of the object
   /// @par Behavior:
-  /// - Returns the value of the filter bit of the group to which the object belongs.
-  /// - If a non-existent object name is given in the configuration file,
-  ///   returns the value of the filter bit of the external object.
+  /// - Returns the filter bit value of the group to which the object belongs.
+  /// - If a non-existent object name is provided in the configuration file,
+  ///   returns the filter bit value of the external object.
   uint16_t GetFilterBitByObjectName(const std::string& object_name) const;
 
-  /// @brief Get the filter bit for searching neighboring objects within the robot
+  /// @brief Retrieves the filter bit for proximity object search within the robot
   /// @param [in] object_name Name of the object to retrieve
   /// @return uint16_t Filter of the object
-  /// - Returns the value of the filter bit for searching neighboring objects
+  /// - Returns the filter bit value for proximity object search
   ///   within the group to which the object belongs.
-  /// - Throws an exception if a non-existent object name is given in the configuration file.
+  /// - Throws an exception if a non-existent object name is provided in the configuration file.
   uint16_t GetInnerFilterBit(const std::string& object_name) const;
 
-  /// @brief Get the group bit of a group
+  /// @brief Retrieves the group bit of a group
   /// @param [in] group_name Name of the group to retrieve
   /// @return uint16_t Group bit of the group
   /// @par Behavior:
   /// - Returns the group bit according to the group name.
-  /// - Throws an exception if a non-existent group name is given in the configuration file.
+  /// - Throws an exception if a non-existent group name is provided in the configuration file.
   uint16_t GetGroupBitByGroupName(const std::string& group_name) const;
 
-  /// @brief Get the filter bit of a group
+  /// @brief Retrieves the filter bit of a group
   /// @param [in] group_name Name of the group to retrieve
   /// @return uint16_t Filter of the group
   /// @par Behavior:
   /// - Returns the filter bit according to the group name.
-  /// - Throws an exception if a non-existent group name is given in the configuration file.
+  /// - Throws an exception if a non-existent group name is provided in the configuration file.
   uint16_t GetFilterBitByGroupName(const std::string& group_name) const;
 
-  /// @brief Get the group name from the object name
+  /// @brief Retrieves the group name from the object name
   /// @param [in] object_name Name of the object to retrieve
   /// @return std::string Group name to which the object belongs
   /// @par Behavior:
-  /// - Throws the group name of the external object if a non-existent object name is given in the configuration file.
-  ///
+  /// - If a non-existent object name is provided in the configuration file,
+  ///   throws the external object's group name.
   std::string GetBelongedGroupName(const std::string& object_name) const;
 
-  /// @brief Get the object names belonging to a group from the group name
+  /// @brief Retrieves the object names belonging to a group name
   /// @param [in] group_name Name of the group to retrieve
   /// @return std::vector<std::string> Object names belonging to the group
   /// @par Behavior:
-  /// - Returns an empty vector if a non-existent group name is given in the configuration file.
+  /// - Returns an empty vector if a non-existent group name is provided in the configuration file.
   std::vector<std::string> GetObjectListInGroup(
       const std::string& group_name) const;
 
-  /// @brief Set the group and filter
+  /// @brief Sets the group and filter
   /// @param [in] group_name Name of the group to set
   /// @param [in] category Group bit of the group
   /// @param [in] filter Filter bit of the group
   /// @par Behavior:
-  /// - Throws an exception if a non-existent group name is given.
+  /// - Throws an exception if a non-existent group name is provided.
   void SetConfig(const std::string& group_name,
                  uint16_t category, uint16_t filter);
 
-  /// @brief Get the list of group names
+  /// @brief Retrieves the list of group names
   /// @return std::vector<std::string> List of group names
   std::vector<std::string> GetGroupNameList() const {return group_name_;}
 
-  /// @brief Get the list of group names of robot parts
-  /// @return std::vector<std::string> List of group names of robot parts
+  /// @brief Retrieves the list of group names for robot parts
+  /// @return std::vector<std::string> List of group names for robot parts
   std::vector<std::string> GetRobotPartsGroupNameList() const {
     return robot_parts_group_name_;
   }
 
-  /// @brief Get the object pairs that do not perform interference check
-  /// @return std::vector<PairString> Object pairs that do not perform interference check
+  /// @brief Retrieves object pairs that do not perform interference checks
+  /// @return std::vector<PairString> Object pairs that do not perform interference checks
   std::vector<PairString> GetDisableObjectPairList() const {
     return disable_collision_pair_list_;
   }
 
  private:
-  /// @brief Set the category/filter to not perform interference check
+  /// @brief Sets category/filter to avoid interference checks
   /// @param [in] groupA Name of the group to set
   /// @param [in] groupB Name of the group to set
   void SetNonContactPairToFilter_(const std::string& groupA,
                                   const std::string& groupB);
 
-  /// @brief Set the category/filter to not perform interference check
+  /// @brief Sets category/filter to avoid interference checks
   /// @param [in] groupA Name of the group to set
   /// @param [in] groupB Name of the group to set
   void SetNotCheckInnerPairToFilter_(const std::string& groupA,
@@ -173,19 +173,19 @@ class CollisionDetectorConfig {
 
   /// List of group names
   std::vector<std::string> group_name_;
-  /// Group names of robot parts
+  /// Group names for robot parts
   std::vector<std::string> robot_parts_group_name_;
-  /// Correspondence table of object and group names
+  /// Correspondence table between object names and group names
   std::map<std::string, std::string> belonged_group_list_;
-  /// Correspondence table of group names and objects
+  /// Correspondence table between group names and object names
   std::multimap<std::string, std::string> group_member_list_;
-  /// Correspondence table of group names and the group bits set by those groups
+  /// Correspondence table between group names and the group bits set by those groups
   std::map<std::string, uint16_t> group_bit_list_;
-  /// Correspondence table of group names and the filter bits set by those groups (general use)
+  /// Correspondence table between group names and the filter bits set by those groups (general use)
   std::map<std::string, uint16_t> filter_bit_list_;
-  /// Correspondence table of group names and the filter bits set by those groups (internal use)
+  /// Correspondence table between group names and the filter bits set by those groups (internal use)
   std::map<std::string, uint16_t> inner_filter_bit_list_;
-  /// List of object names that are excluded from interference check by default
+  /// List of object names excluded from interference checks by default
   std::vector<PairString> disable_collision_pair_list_;
 };
 }  // namespace tmc_robot_collision_detector

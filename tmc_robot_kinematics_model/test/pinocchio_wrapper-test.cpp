@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -34,7 +34,7 @@ DAMAGE.
 namespace tmc_robot_kinematics_model {
 INSTANTIATE_TYPED_TEST_SUITE_P(PinocchioWrapperTest, RobotKinematicsModelTest, PinocchioWrapper);
 
-// Load as a plugin
+// Loading as a plugin
 TEST(PinocchioWrapperTest, Plugin) {
   pluginlib::ClassLoader<IRobotKinematicsModel> loader(
       "tmc_robot_kinematics_model", "tmc_robot_kinematics_model::IRobotKinematicsModel");

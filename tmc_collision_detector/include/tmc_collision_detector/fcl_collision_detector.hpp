@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -84,60 +84,60 @@ class FclCollisionDetector : public ICollisionDetector {
   FclCollisionDetector();
   virtual ~FclCollisionDetector();
 
-  /// Create object
+  /// Create an object
   void CreateObject(const tmc_manipulation_types::ObjectParameter& parameter) override;
-  /// Get object parameters
+  /// Retrieve object parameters
   tmc_manipulation_types::ObjectParameter GetObjectParameter(const std::string& name) const override;
-  /// Get object's AABB
+  /// Retrieve the object's AABB
   tmc_manipulation_types::AABB GetObjectAABB(const std::string& name) const override;
 
-  /// Destroy object
+  /// Destroy the object
   void DestroyObject(const std::string& name) override;
-  /// Destroy all objects after the anchor (excluding the anchor)
+  /// Destroy all objects behind the anchor (excluding the anchor)
   void DestroyObject(void) override;
   /// Set the current last object as the anchor
   void SetAnchor(void) override;
 
-  /// Set object's position and orientation
+  /// Set the position and orientation of the object
   void SetObjectTransform(const Eigen::Affine3d& transform, const std::string& name) override;
-  /// Get object's position and orientation
+  /// Get the position and orientation of the object
   Eigen::Affine3d GetObjectTransform(const std::string& name) const override;
 
-  /// Set object's group
+  /// Set the object's group
   void SetCollisionGroup(const uint16_t group, const std::string& name) override;
-  /// Set object's filter
+  /// Set the object's filter
   void SetCollisionFilter(const uint16_t filter, const std::string& name) override;
-  /// Get object's group
+  /// Get the object's group
   uint16_t GetCollisionGroup(const std::string& name) const override;
-  /// Get object's filter
+  /// Get the object's filter
   uint16_t GetCollisionFilter(const std::string& name) const override;
 
-  /// Enable object interference check
+  /// Enable interference checking for the object
   void EnableObject(const std::string& name) override;
-  /// Disable object interference check
+  /// Disable interference checking for the object
   void DisableObject(const std::string& name) override;
 
-  /// Add object pairs to exclude from interference check in space
+  /// Add object pairs to exclude from interference checking in the space
   void DisableCollisionCheck(const std::vector<PairString>& name_pairs) override;
-  /// Add object pairs to perform interference check in space
+  /// Add object pairs to perform interference checking in the space
   void EnableCollisionCheck(const std::vector<PairString>& name_pairs) override;
 
-  /// Discard exclusion list
+  /// Discard the exclusion list
   void ResetCollisionCheckPairList() override;
 
   /// Check if two objects are interfering
   bool CheckCollisionPair(const std::string& nameA, const std::string& nameB) override;
 
-  /// Check if two objects are interfering (returns contact information)
+  /// Check if two objects are interfering (return contact information)
   bool CheckCollisionPair(const std::string& nameA, const std::string& nameB,
                           Eigen::Vector3d& point, Eigen::Vector3d& normal) override;
 
-  /// Check if two objects are interfering (returns contact depth)
+  /// Check if two objects are interfering (return contact depth)
   bool CheckCollisionPair(const std::string& nameA, const std::string& nameB, double& depth) override;
 
-  /// Check if objects in space are interfering
+  /// Check if objects in the space are interfering
   bool CheckCollisionSpace(void) override;
-  /// Interference check to get names of interfering object pairs
+  /// Interference check to get the names of interfering object pairs
   bool CheckCollisionSpace(PairString& dst_contact_pair) override;
   /// Create a list of interfering object pairs
   bool GetContactPairList(std::vector<PairString>& dst_contact_pair) override;
@@ -145,7 +145,7 @@ class FclCollisionDetector : public ICollisionDetector {
   ClosestResult GetClosestResult(const std::string& nameA, const std::string& nameB) override {
     throw std::runtime_error("Not implemented: GetClosestResult");
   }
-  /// Get information of the nearest object
+  /// Retrieve information about the nearest object
   ClosestResult GetClosestObject(const std::string& name,
                                  double extend_length,
                                  int32_t top_n,
@@ -156,7 +156,7 @@ class FclCollisionDetector : public ICollisionDetector {
   /// Get the physics engine in use
   std::string GetEngine() const override {return kFclName;}
 
-  /// ray casting function
+  /// Ray casting function
   bool RayCasting(const Eigen::Vector3d& start_point,
                   const Eigen::Vector3d& direction,
                   double length,
@@ -192,7 +192,7 @@ class FclCollisionDetector : public ICollisionDetector {
     CollisionObjectWithInfo(const std::shared_ptr<CollisionObject>& _collision_object,
                             const std::shared_ptr<ObjectInfo>& _object_info)
         : collision_object(_collision_object), object_info(_object_info) {
-      // I want to avoid const_cast, but it's cumbersome to include it when generating geometry due to implementation duplication, so I do it this way
+      // Although I want to avoid using const_cast, it's done this way because adding it during geometry generation would be redundant and cumbersome
       const_cast<fcl::CollisionGeometryf*>(collision_object->collisionGeometry().get())
           ->setUserData(object_info.get());
     }
@@ -204,8 +204,8 @@ class FclCollisionDetector : public ICollisionDetector {
   std::vector<std::shared_ptr<fcl::BroadPhaseCollisionManagerf>> managers_;
   std::vector<bool> do_manager_update_;
   std::vector<bool> is_protected_;
-  // This 16 is a remnant of ODE's specification, so it's not ideal
-  // Forcing the filter to be the same if the group is the same doesn't fit the interface of tmc_collision_detector
+  // This "16" is a remnant of ODE's specifications, which is not ideal
+  // Forcing the filter to be the same if the group is the same doesn't align with the tmc_collision_detector interface
   std::vector<std::bitset<16>> filters_;
 
   std::map<std::string, CollisionObjectWithInfo> collision_objects_;

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -228,12 +228,12 @@ class Tarp3Wrapper::Impl {
 
     // Constraints for position (x, y, z) (3 degrees of freedom)
     tarp_rivet_frame_pos_t* rivet_pos = tarp_rivet_frame_pos_create();
-    // Set frame in rivet_frame_pos_dir
+    // Set frame to rivet_frame_pos_dir
     tarp_rivet_frame_pos_set_frame(rivet_pos, frame);
 
     // Constraints for orientation (3 degrees of freedom)
     tarp_rivet_frame_rot_t* rivet_rot = tarp_rivet_frame_rot_create();
-    // Set frame in rivet_frame_rot
+    // Set frame to rivet_frame_rot
     tarp_rivet_frame_rot_set_frame(rivet_rot, frame);
 
     // Add rivet to phase
@@ -255,12 +255,12 @@ class Tarp3Wrapper::Impl {
       // Add strap to phase
       tarp_phase_push_strap(phase, reinterpret_cast<tarp_strap_t*>(strap));
     }
-    // Update Jacobian matrix of phase
+    // Update the Jacobian matrix of the phase
     tarp_phase_update_jacob(phase);
     tarp_rivet_get_jacob(reinterpret_cast<tarp_rivet_t*>(rivet_pos), jacob_pos);
     tarp_rivet_get_jacob(reinterpret_cast<tarp_rivet_t*>(rivet_rot), jacob_rot);
 
-    // Convert Jacobian from tarp3, which is based on base, to origin basis
+    // The Jacobian output by tarp3 is based on the base, so convert it to origin-based
     Eigen::MatrixXd jacobian_pos = origin_to_robot_.linear() *
         TarpMatrix2Eigen(jacob_pos);
     Eigen::MatrixXd jacobian_rot = origin_to_robot_.linear() *
@@ -299,7 +299,7 @@ class Tarp3Wrapper::Impl {
     }
   }
 
-  // For eigen fixed-length members
+  // For fixed-length Eigen members
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
@@ -309,8 +309,8 @@ class Tarp3Wrapper::Impl {
   std::map<std::string, tarp_frame_t*> additional_frames_;
 };
 
-/// @brief Constructor. Create robot model from configuration file
-/// @param [in] robot_model_config Path to robot model configuration file
+/// @brief Constructor. Create a robot model from a configuration file
+/// @param [in] robot_model_config Path to the robot model configuration file
 Tarp3Wrapper::Tarp3Wrapper(const std::string& robot_model_config) :
     pimpl_(new Impl(robot_model_config)) {
 }
@@ -319,50 +319,50 @@ Tarp3Wrapper::Tarp3Wrapper(const std::string& robot_model_config) :
 Tarp3Wrapper::~Tarp3Wrapper() {
 }
 
-/// @brief Get robot's position and orientation
+/// @brief Get the position and orientation of the robot
 Eigen::Affine3d Tarp3Wrapper::GetRobotTransform(void) const {
   return pimpl_->GetRobotTransform();
 }
 
 
-/// @brief Input robot's position and orientation
+/// @brief Input the position and orientation of the robot
 void Tarp3Wrapper::SetRobotTransform(const Eigen::Affine3d& transform) {
   pimpl_->SetRobotTransform(transform);
 }
 
-/// @brief Specify robot's joint name and input its joint angle
+/// @brief Specify the joint name of the robot and input its joint angle
 void Tarp3Wrapper::SetNamedAngle(const JointState& angle) {
   pimpl_->SetNamedAngle(angle);
 }
 
-/// @brief Get robot's joint name and its angle
+/// @brief Get the joint name of the robot and its angle
 ///        If called without arguments, returns all joints.
 JointState Tarp3Wrapper::GetNamedAngle(void) const {
   return pimpl_->GetNamedAngle();
 }
 
-/// @brief  Get robot's joint name and its angle
+/// @brief  Get the joint name of the robot and its angle
 JointState Tarp3Wrapper::GetNamedAngle(const NameSeq& joint_names) const {
   return pimpl_->GetNamedAngle(joint_names);
 }
 
-/// @brief  Get object's position and orientation
+/// @brief  Get the position and orientation of the object
 Eigen::Affine3d Tarp3Wrapper::GetObjectTransform(
     const std::string& name) const {
   return pimpl_->GetObjectTransform(name);
 }
 
-/// @brief  Get object's relative position and orientation
-/// @param  [in] base_name Reference object name
-/// @param  [in] name Object name to retrieve
-/// @return Eigen::Affine3d Object's position and orientation
+/// @brief  Get the relative position and orientation of the object
+/// @param  [in] base_name Name of the reference object
+/// @param  [in] name Name of the object to retrieve
+/// @return Eigen::Affine3d Position and orientation of the object
 Eigen::Affine3d Tarp3Wrapper::GetObjectRelativeTransform(
     const std::string& base_name,
     const std::string& name) const {
   return pimpl_->GetObjectRelativeTransform(base_name, name);
 }
 
-/// @brief  Dynamically add frame
+/// @brief  Dynamically add a frame
 void Tarp3Wrapper::CreateFrame(
     const std::string& parent_frame_name, const Eigen::Affine3d& transform,
     const std::string& new_frame_name) {
@@ -370,14 +370,14 @@ void Tarp3Wrapper::CreateFrame(
                              new_frame_name);
 }
 
-/// @brief  Dynamically remove frame
+/// @brief  Dynamically delete a frame
 void Tarp3Wrapper::DestroyFrame(const std::string& frame_name) {
   pimpl_->DestroyFrame(frame_name);
 }
 
-/// @brief Get Jacobian
+/// @brief Retrieve the Jacobian
 /// @param [in] frame_name Specified frame name
-/// @param [in] frame_to_end Offset from specified frame
+/// @param [in] frame_to_end Offset from the specified frame
 /// @param [in] use_joints Joint angles to use
 /// @retval Jacobian from robot_base to end
 Eigen::MatrixXd Tarp3Wrapper::GetJacobian(const std::string& frame_name,
@@ -386,7 +386,7 @@ Eigen::MatrixXd Tarp3Wrapper::GetJacobian(const std::string& frame_name,
   return pimpl_->GetJacobian(frame_name, frame_to_end, use_joints);
 }
 
-/// @brief Get minimum and maximum of joints.
+/// @brief Retrieve the minimum and maximum of the joint.
 /// @param [in] use_joints Joint angles to use
 /// @param [out] min Lower limit
 /// @param [out] max Upper limit
@@ -397,9 +397,9 @@ void Tarp3Wrapper::GetMinMax(const NameSeq& use_joints,
 }
 }  // namespace tmc_robot_kinematics_model
 
-/// @brief Get minimum and maximum of joints.
-/// @param [in] model_path Path to robot's model file (urdf)
-/// @return robot Pointer to robot model
+/// @brief Retrieve the minimum and maximum of the joint.
+/// @param [in] model_path Path to the robot's model file (urdf)
+/// @return robot Pointer to the robot model
 void* load_xml_create_robot(char* model_path) {
   std::string xml_string;
   std::fstream xml_file(model_path, std::fstream::in);

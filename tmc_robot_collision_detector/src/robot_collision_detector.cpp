@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file robot_collision_detector.cpp
-/// @brief Perform interference check using robot model
+/// @brief Perform interference check using the robot model
 #include <tmc_robot_collision_detector/robot_collision_detector.hpp>
 
 #include <algorithm>
@@ -59,19 +59,19 @@ using urdf::GeometrySharedPtr;
 
 
 namespace {
-/// RobotConfigFile tag
+/// Tag of RobotConfigFile
 const char* const kCollisionTag = "COLLISION";
 
 /// @brief Get the name of the child object to register with the interference checker
-/// @param [in] parent_name Parent object name
-/// @param [in] child_num Child object number
-/// @return std::string Child object name
+/// @param [in] parent_name Name of the parent object
+/// @param [in] child_num Number of the child object
+/// @return std::string Name of the child object
 std::string MakeChildObjectName(
     const std::string& parent_name, uint32_t child_num) {
   return parent_name + '#' + std::to_string(child_num);
 }
 
-/// @brief Compare and integrate AABB
+/// @brief Compare and merge AABBs
 AABB CombineAABB(const AABB& aabb1, const AABB& aabb2) {
   AABB return_aabb;
   for (int32_t i = 0; i < 3; i++) {
@@ -81,9 +81,9 @@ AABB CombineAABB(const AABB& aabb1, const AABB& aabb2) {
   return return_aabb;
 }
 
-/// @brief Determine if AABB overlaps
-/// @param [in] inputA AABB number 1
-/// @param [in] inputB AABB number 2
+/// @brief Determine if AABBs overlap
+/// @param [in] inputA AABB 1
+/// @param [in] inputB AABB 2
 /// @return bool True if overlapping
 bool CheckAABBOverlap(const AABB& inputA, const AABB& inputB) {
   if ((inputA(0, 1) < inputB(0, 0)) || (inputA(1, 1) < inputB(1, 0)) ||
@@ -97,7 +97,7 @@ bool CheckAABBOverlap(const AABB& inputA, const AABB& inputB) {
 
 /// @brief Determine if overlapping on the XY plane
 /// @param [in] inputA AABB
-/// @param [in] inputB XY plane range
+/// @param [in] inputB Range on the XY plane
 /// @return bool True if overlapping
 bool CheckXYPlainOverlap(const AABB& inputA, const AABB& inputB) {
   if ((inputA(0, 1) < inputB(0, 0)) || (inputA(1, 1) < inputB(1, 0)) ||
@@ -130,7 +130,7 @@ void ConvertAffine3dToParam(const Eigen::Affine3d& transform,
 /// @param [out] transform Position and orientation in Affine3d
 void ConvertParamToAffine3d(const std::vector<double>& param,
                             Eigen::Affine3d& dst_transform) {
-  // param should contain 7 elements of position + orientation (quaternion)
+  // param is expected to contain 7 elements of position + orientation (quaternion)
   if (param.size() != 7) {
     throw std::domain_error("ConvertParamToAffine3d error: invalid param.");
   }
@@ -143,8 +143,8 @@ void ConvertParamToAffine3d(const std::vector<double>& param,
 
 /// @brief Convert urdf shape to coldet parameters
 /// @param  [in] urdf_shape Shape information in urdf
-/// @param  [in] name Cannot assign name in urdf
-///              Use (link_name)/collision/[0~x]
+/// @param  [in] name Since names cannot be assigned in urdf
+///              (link_name)/collision/[0~x] is used
 /// @return tmc_manipulation_types::ObjectParameter
 ///         Shape information of robot parts used in coldet
 tmc_manipulation_types::ObjectParameter ConvertUrdfShapeToCollisionObject(
@@ -185,7 +185,7 @@ tmc_manipulation_types::ObjectParameter ConvertUrdfShapeToCollisionObject(
     default:
       throw std::domain_error("error: not exist primitive type");
   }
-  // ToDo Make margin readable from configuration file
+  // ToDo Make margin configurable from the settings file
   parameter.margin = 0.0;
   return parameter;
 }
@@ -198,7 +198,7 @@ void RobotCollisionDetector::Init_(const std::string& robot_model_config,
                                    const std::string& engine,
                                    ModelFileType model_file_type) {
   robot_collision_config_ = std::make_shared<CollisionDetectorConfig>(robot_collision_config);
-  // Initialize interference check engine
+  // Initialize the interference check engine
   CollisionDetectorFactory::Ptr coldet_factory(
       new CollisionDetectorFactory(engine));
   coldet_ = coldet_factory->CreateCollisionDetector();
@@ -224,7 +224,7 @@ void RobotCollisionDetector::Init_(const std::string& robot_model_config,
   environmental_data_.model_file_type = model_file_type;
 }
 
-// Constructor to explicitly specify robot kinematic model
+// Constructor to explicitly specify the robot's kinematic model
 RobotCollisionDetector::RobotCollisionDetector(
     const tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr& robot_model,
     const std::string& robot_model_config,
@@ -241,7 +241,7 @@ RobotCollisionDetector::RobotCollisionDetector(
     const std::string& robot_model_config,
     const std::string& robot_collision_config,
     const std::string& engine) {
-  // Use urdf
+  // Using urdf
   Init_(robot_model_config,
         robot_collision_config,
         engine,
@@ -268,14 +268,14 @@ void RobotCollisionDetector::SetRobotNamedAngle(
   UpdateCollisionModel_();
 }
 
-// Input robot position and orientation
+// Input the robot's position and orientation
 void RobotCollisionDetector::SetRobotTransform(
     const Eigen::Affine3d& origin_to_robot) {
   robot_model_->SetRobotTransform(origin_to_robot);
   UpdateCollisionModel_();
 }
 
-// Create external object
+// Create external objects
 void RobotCollisionDetector::CreateOuterObject(
     const OuterObjectParameters& parameters) {
   // Input value check
@@ -313,18 +313,18 @@ void RobotCollisionDetector::CreateOuterObject(
   outer_object_list_[parameters.name].cuboid = false;
 }
 
-// Construct environment composed of Cuboids
+// Construct an environment composed of Cuboids
 void RobotCollisionDetector::CreateCuboids(const CuboidSeq& map,
                                            bool enable_flag) {
   CreateCuboids(map, enable_flag, kCuboidGroupName);
 }
 
-// Construct environment composed of Cuboids
+// Construct an environment composed of Cuboids
 void RobotCollisionDetector::CreateCuboids(
     const tmc_manipulation_types::CuboidSeq& map,
     bool enable_flag,
     const std::string& cuboid_group_name) {
-  // Prepare to create Cuboid
+  // Preparation for creating Cuboids
   tmc_manipulation_types::ObjectParameter parameter;
   parameter.filter =
       robot_collision_config_->GetFilterBitByGroupName(cuboid_group_name);
@@ -336,7 +336,7 @@ void RobotCollisionDetector::CreateCuboids(
   outer_parameter.base_to_child.push_back(Eigen::Affine3d::Identity());
   outer_parameter.shape.resize(1);
 
-  // Decide group
+  // Decide the group
   std::vector<std::string>::iterator group =
       std::find(bounding_box_.group_name.begin(),
                 bounding_box_.group_name.end(), cuboid_group_name);
@@ -359,7 +359,7 @@ void RobotCollisionDetector::CreateCuboids(
       throw std::domain_error(
           "CreateCuboids error: this object name already exist");
     }
-    // Create in interference check space
+    // Create in the interference check space
     parameter.name = MakeChildObjectName(it->box_name, 0);
     parameter.transform = it->box_transform;
     Eigen::Map<Eigen::Vector3d>(&(parameter.shape.dimensions[0])) =
@@ -390,10 +390,10 @@ void RobotCollisionDetector::CreateCuboids(
   }
 }
 
-// Discard external object
+// Dispose of external objects
 void RobotCollisionDetector::DestroyOuterObject(
     const std::string& object_name) {
-  // Do not target if internal object
+  // Do not target if it is an internal object
   if (IsInnerObject_(object_name)) {
     return;
   }
@@ -412,20 +412,20 @@ void RobotCollisionDetector::DestroyOuterObject(
   outer_object_list_.erase(it);
 }
 
-// Discard all external objects
+// Dispose of all external objects
 void RobotCollisionDetector::DestroyAllOuterObject(void) {
   ReleaseAllObject();
   outer_object_list_.clear();
   coldet_->DestroyObject();
   bounding_box_.boxes.clear();
   bounding_box_.group_name.clear();
-  // Reset objects to exclude from interference check
+  // Reset objects to be excluded from interference check
   std::vector<PairString> disable_object_pairs(
       robot_collision_config_->GetDisableObjectPairList());
   coldet_->DisableCollisionCheck(disable_object_pairs);
 }
 
-// Discard environment composed of Cuboids
+// Dispose of the environment composed of Cuboids
 void RobotCollisionDetector::DestroyCuboids() {
   for (std::vector<CuboidSeq>::iterator cuboids = bounding_box_.boxes.begin();
        cuboids != bounding_box_.boxes.end(); ++cuboids) {
@@ -442,13 +442,13 @@ void RobotCollisionDetector::DestroyCuboids() {
 // Get object information
 OuterObjectParameters RobotCollisionDetector::GetObjectParameter(
     const std::string& object_name) const {
-  // Search from external object list
+  // Search from the external object list
   std::map<std::string, OuterObjectParameters>::const_iterator it =
       outer_object_list_.find(object_name);
   if (it != outer_object_list_.end()) {
     return it->second;
   }
-  // Search from interference check space
+  // Search from the interference check space
   tmc_manipulation_types::ObjectParameter parameter =
       coldet_->GetObjectParameter(object_name);
   OuterObjectParameters return_parameter;
@@ -460,7 +460,7 @@ OuterObjectParameters RobotCollisionDetector::GetObjectParameter(
   return return_parameter;
 }
 
-// Get information of all external objects
+// Get information on all external objects
 OuterObjectParametersSeq
 RobotCollisionDetector::GetAllOuterObjectParameters() const {
   OuterObjectParametersSeq return_parameters;
@@ -471,7 +471,7 @@ RobotCollisionDetector::GetAllOuterObjectParameters() const {
   return return_parameters;
 }
 
-// Enable interference check for object
+// Enable interference check for objects
 void RobotCollisionDetector::EnableCollisionObject(
     const std::string& object_name) {
   auto enable_object_function = std::bind(
@@ -479,7 +479,7 @@ void RobotCollisionDetector::EnableCollisionObject(
   SetObjectProperty_(object_name, enable_object_function);
 }
 
-// Disable interference check for object
+// Disable interference check for objects
 void RobotCollisionDetector::DisableCollisionObject(
     const std::string& object_name) {
   auto disable_object_function = std::bind(
@@ -487,7 +487,7 @@ void RobotCollisionDetector::DisableCollisionObject(
   SetObjectProperty_(object_name, disable_object_function);
 }
 
-// Change object group
+// Change the group of the object
 void RobotCollisionDetector::SetObjectGroup(const std::string& object_name,
                                             uint16_t category) {
   auto set_group_function = std::bind(
@@ -495,7 +495,7 @@ void RobotCollisionDetector::SetObjectGroup(const std::string& object_name,
   SetObjectProperty_(object_name, set_group_function);
 }
 
-// Reset object group to default
+// Reset the group of the object to default
 void RobotCollisionDetector::SetObjectDefaultGroup(
     const std::string& object_name) {
   uint16_t category = GetObjectDefaultGroup(object_name);
@@ -504,7 +504,7 @@ void RobotCollisionDetector::SetObjectDefaultGroup(
   SetObjectProperty_(object_name, set_group_function);
 }
 
-// Get object group
+// Get the group of the object
 uint16_t RobotCollisionDetector::GetObjectGroup(
     const std::string& object_name) const {
   std::map<std::string, OuterObjectParameters>::const_iterator it;
@@ -515,7 +515,7 @@ uint16_t RobotCollisionDetector::GetObjectGroup(
   return coldet_->GetCollisionGroup(MakeChildObjectName(object_name, 0));
 }
 
-// Get default object group
+// Get the default group of the object
 uint16_t RobotCollisionDetector::GetObjectDefaultGroup(
     const std::string& object_name) const {
   for (std::vector<CuboidSeq>::const_iterator cuboid =
@@ -534,7 +534,7 @@ uint16_t RobotCollisionDetector::GetObjectDefaultGroup(
   return robot_collision_config_->GetGroupBitByObjectName(object_name);
 }
 
-// Change object filter
+// Change the filter of the object
 void RobotCollisionDetector::SetObjectFilter(
     const std::string& object_name, uint16_t filter) {
   auto set_filter_function = std::bind(
@@ -542,7 +542,7 @@ void RobotCollisionDetector::SetObjectFilter(
   SetObjectProperty_(object_name, set_filter_function);
 }
 
-// Reset object filter to default
+// Reset the filter of the object to default
 void RobotCollisionDetector::SetObjectDefaultFilter(
     const std::string& object_name) {
   uint16_t filter = GetObjectDefaultFilter(object_name);
@@ -551,7 +551,7 @@ void RobotCollisionDetector::SetObjectDefaultFilter(
   SetObjectProperty_(object_name, set_filter_function);
 }
 
-// Get object filter
+// Get the filter of the object
 uint16_t RobotCollisionDetector::GetObjectFilter(
     const std::string& object_name) const {
   std::map<std::string, OuterObjectParameters>::const_iterator it;
@@ -562,7 +562,7 @@ uint16_t RobotCollisionDetector::GetObjectFilter(
   return coldet_->GetCollisionFilter(MakeChildObjectName(object_name, 0));
 }
 
-// Get default object filter
+// Get the default filter of the object
 uint16_t RobotCollisionDetector::GetObjectDefaultFilter(
     const std::string& object_name) const {
   for (std::vector<CuboidSeq>::const_iterator cuboid =
@@ -581,7 +581,7 @@ uint16_t RobotCollisionDetector::GetObjectDefaultFilter(
   return robot_collision_config_->GetFilterBitByObjectName(object_name);
 }
 
-// Add pair of objects to exclude from interference check
+// Add object pairs to be excluded from interference check
 void RobotCollisionDetector::DisableCollisionCheckObjectToObject(
     const std::string& object_name1,
     const std::string& object_name2) {
@@ -589,7 +589,7 @@ void RobotCollisionDetector::DisableCollisionCheckObjectToObject(
       GetObjectToObjectPairNameList_(object_name1, object_name2));
 }
 
-// Add pair of objects to include in interference check
+// Add object pairs to be included in interference check
 void RobotCollisionDetector::EnableCollisionCheckObjectToObject(
     const std::string& object_name1,
     const std::string& object_name2) {
@@ -597,7 +597,7 @@ void RobotCollisionDetector::EnableCollisionCheckObjectToObject(
       GetObjectToObjectPairNameList_(object_name1, object_name2));
 }
 
-// Add pair of object groups to exclude from interference check
+// Add object-group pairs to be excluded from interference check
 void RobotCollisionDetector::DisableCollisionCheckObjectToGroup(
     const std::string& object_name,
     const std::string& group_name) {
@@ -605,7 +605,7 @@ void RobotCollisionDetector::DisableCollisionCheckObjectToGroup(
       GetObjectToGroupPairNameList_(object_name, group_name));
 }
 
-// Add pair of object groups to include in interference check
+// Add object-group pairs to be included in interference check
 void RobotCollisionDetector::EnableCollisionCheckObjectToGroup(
     const std::string& object_name,
     const std::string& group_name) {
@@ -613,15 +613,15 @@ void RobotCollisionDetector::EnableCollisionCheckObjectToGroup(
       GetObjectToGroupPairNameList_(object_name, group_name));
 }
 
-// To exclude from interference check
-// Change filter of objects belonging to group
+// To exclude from interference check, change the filter of objects
+// Change the filter of objects belonging to the group
 void RobotCollisionDetector::DisableCollisionCheckGroupToGroup(
     const std::string& group_name1, const std::string& group_name2) {
-  // Get object name list from group name
+  // Get the list of object names from the group name
   std::vector<std::string> name_list1(GetObjectNameListByGroup(group_name1));
   std::vector<std::string> name_list2(GetObjectNameListByGroup(group_name2));
 
-  // Change filter of objects belonging to group 1
+  // Change the filter of objects belonging to group 1
   uint16_t category =
       robot_collision_config_->GetGroupBitByGroupName(group_name2);
   robot_collision_config_->SetConfig(
@@ -636,7 +636,7 @@ void RobotCollisionDetector::DisableCollisionCheckGroupToGroup(
     SetObjectFilter(*it, filter);
   }
 
-  // Change filter of objects belonging to group 2
+  // Change the filter of objects belonging to group 2
   category =
       robot_collision_config_->GetGroupBitByGroupName(group_name1);
   robot_collision_config_->SetConfig(
@@ -652,15 +652,15 @@ void RobotCollisionDetector::DisableCollisionCheckGroupToGroup(
   }
 }
 
-// To include in interference check
-// Change filter of objects belonging to group
+// To include in interference check, change the filter of objects
+// Change the filter of objects belonging to the group
 void RobotCollisionDetector::EnableCollisionCheckGroupToGroup(
     const std::string& group_name1, const std::string& group_name2) {
-  // Get object name list from group name
+  // Get the list of object names from the group name
   std::vector<std::string> name_list1(GetObjectNameListByGroup(group_name1));
   std::vector<std::string> name_list2(GetObjectNameListByGroup(group_name2));
 
-  // Change filter of objects belonging to group 1
+  // Change the filter of objects belonging to group 1
   uint16_t category =
       robot_collision_config_->GetGroupBitByGroupName(group_name2);
   robot_collision_config_->SetConfig(
@@ -675,7 +675,7 @@ void RobotCollisionDetector::EnableCollisionCheckGroupToGroup(
     SetObjectFilter(*it, filter);
   }
 
-  // Change filter of objects belonging to group 2
+  // Change the filter of objects belonging to group 2
   category =
       robot_collision_config_->GetGroupBitByGroupName(group_name1);
   robot_collision_config_->SetConfig(
@@ -691,11 +691,11 @@ void RobotCollisionDetector::EnableCollisionCheckGroupToGroup(
   }
 }
 
-// Set object position and orientation
+// Set the position and orientation of the object
 void RobotCollisionDetector::SetObjectTransform(
     const std::string& object_name,
     const Eigen::Affine3d& origin_to_object) {
-  // Do not target if internal object
+  // Do not target if it is an internal object
   if (IsInnerObject_(object_name)) {
     return;
   }
@@ -717,7 +717,7 @@ void RobotCollisionDetector::SetObjectTransform(
   it->second.origin_to_base = origin_to_object;
 }
 
-// Get object position
+// Get the position of the object
 Eigen::Affine3d RobotCollisionDetector::GetObjectTransform(
     const std::string& object_name) const {
   std::map<std::string, OuterObjectParameters>::const_iterator it;
@@ -731,17 +731,17 @@ Eigen::Affine3d RobotCollisionDetector::GetObjectTransform(
   }
 }
 
-// Grab object
+// Grab the object
 void RobotCollisionDetector::HoldObject(
     const std::string& object_name,
     const std::string& frame_name,
     const Eigen::Affine3d& held_frame_to_object,
     const std::string& held_group_name) {
-  // Do not target if internal object
+  // Do not target if it is an internal object
   if (IsInnerObject_(object_name)) {
     return;
   }
-  // Change object attributes
+  // Change the attributes of the object
   std::map<std::string, OuterObjectParameters>::iterator it =
       outer_object_list_.find(object_name);
   if (it == outer_object_list_.end()) {
@@ -758,7 +758,7 @@ void RobotCollisionDetector::HoldObject(
   it->second.origin_to_base = origin_to_frame * held_frame_to_object;
   for (uint32_t i = 0; i < it->second.base_to_child.size(); i++) {
     std::string child_name(MakeChildObjectName(it->second.name, i));
-    // Reflect to current position
+    // Reflect to the current position
     coldet_->SetObjectTransform(
         it->second.origin_to_base * it->second.base_to_child.at(i), child_name);
   }
@@ -784,7 +784,7 @@ void RobotCollisionDetector::HoldObject(
   }
 }
 
-// Grab object
+// Grab the object
 void RobotCollisionDetector::HoldObject(
     const std::string& object_name,
     const std::string& frame_name,
@@ -793,7 +793,7 @@ void RobotCollisionDetector::HoldObject(
   HoldObject(object_name, frame_name, held_frame_to_object, group_name);
 }
 
-// Release grabbed object
+// Release the grabbed object
 void RobotCollisionDetector::ReleaseObject(const std::string& object_name) {
   if (attached_object_name_.find(object_name) != attached_object_name_.end()) {
     attached_object_name_.erase(object_name);
@@ -813,7 +813,7 @@ void RobotCollisionDetector::ReleaseObject(const std::string& object_name) {
 
 // Release all grabbed objects
 void RobotCollisionDetector::ReleaseAllObject(void) {
-  // Copy before using as held_object_name_ is erased in ReleaseObject
+  // Copy held_object_name_ before using it in ReleaseObject as it will be deleted
   std::vector<std::string> all_object;
   for (std::map<std::string, std::string>::iterator it =
            attached_object_name_.begin();
@@ -825,19 +825,19 @@ void RobotCollisionDetector::ReleaseAllObject(void) {
     ReleaseObject(*it);
   }
 
-  // Set internal interference checker
+  // Settings for internal interference checker
   inner_coldet_->DestroyObject();
   std::vector<PairString> disable_object_pairs(
       robot_collision_config_->GetDisableObjectPairList());
   inner_coldet_->DisableCollisionCheck(disable_object_pairs);
 }
 
-// Interference check, stop check if interference is detected
+// Interference check, stop checking if interference is detected
 bool RobotCollisionDetector::CheckCollision() {
   return coldet_->CheckCollisionSpace();
 }
 
-// Interference check, output name of interfering object
+// Interference check, output the name of the interfering object
 bool RobotCollisionDetector::CheckCollision(
     bool end_flag,
     std::vector<PairString>& dst_contact_pair) {
@@ -881,7 +881,7 @@ bool RobotCollisionDetector::CheckClosestObject(
       contact = true;
     }
   }
-  // Grabbed object
+  // Objects being held
   for (std::map<std::string, std::string>::iterator it =
            attached_object_name_.begin();
        it != attached_object_name_.end(); ++it) {
@@ -911,7 +911,7 @@ bool RobotCollisionDetector::CheckClosestObject(
     const std::string& object_name,
     double extend_length, int32_t top_n,
     ClosestObject& dst_result) {
-  // Update inner robot model
+  // Update the inner robot model
   UpdateInnerModel_();
 
   // If object_name is a robot part
@@ -999,7 +999,7 @@ bool RobotCollisionDetector::CheckClosestObject(
   return dst_result.inner_result.contact | dst_result.outer_result.contact;
 }
 
-// Get object AABB
+// Get the AABB of the object
 AABB RobotCollisionDetector::GetObjectAABB(
     const std::string& object_name) const {
   std::map<std::string, OuterObjectParameters>::const_iterator it =
@@ -1018,7 +1018,7 @@ AABB RobotCollisionDetector::GetObjectAABB(
   }
 }
 
-// Get robot overall AABB
+// Get the AABB of the entire robot
 AABB RobotCollisionDetector::GetRobotAABB() const {
   AABB return_aabb;
   return_aabb << DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX;
@@ -1035,11 +1035,11 @@ AABB RobotCollisionDetector::GetRobotAABB() const {
   return return_aabb;
 }
 
-/// Enable only Cuboids overlapping with robot
+/// Enable only Cuboids overlapping with the robot
 void RobotCollisionDetector::RefleshOverlappedCuboids(
     CuboidOverlapType overlap_type,
     CuboidOverlapGroupType group_type) {
-  // Get aabb
+  // Get the AABB
   AABBSeq aabb;
   switch (group_type) {
     case kOverlapRobot: {
@@ -1067,7 +1067,7 @@ void RobotCollisionDetector::RefleshOverlappedCuboids(
       throw std::domain_error(
           "RefleshOverlappedCuboids error: invalid overlap type");
   }
-  // Toggle enable, disable
+  // Toggle enable and disable
   for (std::vector<CuboidSeq>::const_iterator cuboid =
            bounding_box_.boxes.begin();
        cuboid != bounding_box_.boxes.end(); ++cuboid) {
@@ -1106,7 +1106,7 @@ void RobotCollisionDetector::RefleshOverlappedCuboids(
   }
 }
 
-// Enable interference check for Cuboids belonging to group
+// Enable interference check for Cuboids belonging to the group
 void RobotCollisionDetector::EnableCuboids(const std::string& group_name) {
   // Check if group_name exists
   std::vector<std::string> group_list(
@@ -1132,7 +1132,7 @@ void RobotCollisionDetector::EnableCuboids(const std::string& group_name) {
   }
 }
 
-// Disable interference check for Cuboids belonging to group
+// Disable interference check for Cuboids belonging to the group
 void RobotCollisionDetector::DisableCuboids(const std::string& group_name) {
   // Check if group_name exists
   std::vector<std::string> group_list(
@@ -1158,7 +1158,7 @@ void RobotCollisionDetector::DisableCuboids(const std::string& group_name) {
   }
 }
 
-// Return number of enabled Cuboids, for test/evaluation
+// Return the number of enabled Cuboids, for testing/evaluation
 uint32_t RobotCollisionDetector::GetEnableCuboidsNum() {
   uint32_t count = 0;
   for (std::vector<CuboidSeq>::const_iterator cuboid =
@@ -1174,7 +1174,7 @@ uint32_t RobotCollisionDetector::GetEnableCuboidsNum() {
   return count;
 }
 
-// Get names of all objects in interference check space
+// Get the names of all objects in the interference check space
 std::vector<std::string> RobotCollisionDetector::GetObjectNameList() const {
   std::vector<std::string> name_list(robot_parts_name_);
   name_list.reserve(name_list.size() + outer_object_list_.size());
@@ -1185,7 +1185,7 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameList() const {
   return name_list;
 }
 
-// Get names of all objects belonging to group
+// Get the names of all objects belonging to the group
 std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
     const std::string& group_name) const {
   // Check if group_name exists
@@ -1197,10 +1197,10 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
     throw std::domain_error(
         "GetObjectNameListByGroup error: invalid group name " + group_name);
   }
-  // Get default values of objects belonging to group
+  // Get the default values of objects belonging to the group
   std::vector<std::string> name_list;
   name_list.reserve(outer_object_list_.size() + robot_parts_name_.size());
-  // Process grasped object
+  // Process grabbed objects
   for (std::map<std::string, std::string>::const_iterator it =
            attached_object_name_.begin();
        it != attached_object_name_.end(); ++it) {
@@ -1208,15 +1208,15 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
       name_list.push_back(it->first);
     }
   }
-  // If external object
+  // If it is an external object
   if (group_name == kOuterGroupName) {
     for (OuterObjectMap::const_iterator it = outer_object_list_.begin();
          it != outer_object_list_.end(); ++it) {
-      // Ignore cuboid
+      // Ignore Cuboids
       if (it->second.cuboid) {
         continue;
       }
-      // Ignore grasped object
+      // Ignore grabbed objects
       if (attached_object_name_.find(it->first) !=
           attached_object_name_.end()) {
         continue;
@@ -1224,7 +1224,7 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
       name_list.push_back(it->first);
     }
   }
-  // If cuboid
+  // If it is a Cuboid
   std::vector<std::string>::const_iterator cuboid_group_name =
       std::find(bounding_box_.group_name.begin(),
                 bounding_box_.group_name.end(), group_name);
@@ -1236,7 +1236,7 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
       name_list.push_back(it->box_name);
     }
   }
-  // If robot part
+  // If it is a robot part
   group_list = robot_collision_config_->GetRobotPartsGroupNameList();
   std::vector<std::string>::const_iterator parts_group(
       std::find(group_list.begin(), group_list.end(), group_name));
@@ -1247,7 +1247,7 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
   }
   return name_list;
   // Simple and correct implementation, but slow
-  // Search for objects with group_name as group
+  // Find objects with group_name as their group
 //  uint16_t group_bit =
 //      robot_collision_config_->GetGroupBitByGroupName(group_name);
 //  for (std::vector<std::string>::const_iterator it =
@@ -1266,7 +1266,7 @@ std::vector<std::string> RobotCollisionDetector::GetObjectNameListByGroup(
 //  return name_list;
 }
 
-// Get list of names of grasped objects
+// Get the list of names of grabbed objects
 std::vector<std::string> RobotCollisionDetector::GetHeldObjectList() const {
   std::vector<std::string> name_list;
   name_list.reserve(attached_object_name_.size());
@@ -1278,7 +1278,7 @@ std::vector<std::string> RobotCollisionDetector::GetHeldObjectList() const {
   return name_list;
 }
 
-// Set object attributes
+// Set the attributes of the object
 void RobotCollisionDetector::SetObjectProperty_(
     const std::string& object_name,
     std::function<void(const std::string&)> set_property_function) {
@@ -1297,25 +1297,25 @@ void RobotCollisionDetector::SetObjectProperty_(
   }
 }
 
-// Check if internal object
+// Check if it is an internal object
 bool RobotCollisionDetector::IsInnerObject_(const std::string& object_name) {
-  // If robot part
+  // Check if it is a robot part
   std::vector<std::string>::iterator robot_part =
       std::find(robot_parts_name_.begin(), robot_parts_name_.end(),
                 object_name);
   if (robot_part != robot_parts_name_.end()) {
     return true;
   }
-  // If grasped object
+  // Check if it is a grabbed object
   if (attached_object_name_.find(object_name) != attached_object_name_.end()) {
     return true;
   }
   return false;
 }
 
-// Check if child object
+// Check if it is a child object
 bool RobotCollisionDetector::IsChildObject_(const std::string& object_name) {
-  // Extract part before #
+  // Extract the part before #
   const auto split_pos = object_name.find_last_of("#");
   std::string parent_name = "";
   if (split_pos != std::string::npos) {
@@ -1338,7 +1338,7 @@ bool RobotCollisionDetector::IsChildObject_(const std::string& object_name) {
   }
 }
 
-// Update interference check model for nearby check of internal objects
+// Update the interference check model for internal object proximity check
 void RobotCollisionDetector::UpdateInnerModel_(void) {
   for (std::vector<std::string>::iterator it = robot_parts_name_.begin();
        it != robot_parts_name_.end(); ++it) {
@@ -1360,14 +1360,14 @@ void RobotCollisionDetector::UpdateInnerModel_(void) {
   }
 }
 
-// Update model for interference check based on robot kinematic model
+// Update the model for interference check based on the robot's kinematic model
 void RobotCollisionDetector::UpdateCollisionModel_(void) {
-  // Update robot part
+  // Update robot parts
   for (std::vector<std::string>::iterator it = robot_parts_name_.begin();
        it != robot_parts_name_.end(); ++it) {
     coldet_->SetObjectTransform(GetObjectTransformFromKinematicsModel_(*it), *it);
   }
-  // Update grabbed object
+  // Update grabbed objects
   for (std::map<std::string, std::string>::iterator it =
            attached_object_name_.begin();
        it != attached_object_name_.end(); ++it) {
@@ -1386,13 +1386,13 @@ void RobotCollisionDetector::UpdateCollisionModel_(void) {
   }
 }
 
-// Create list of object name pairs of object and object
+// Create a list of object-object name pairs
 std::vector<PairString> RobotCollisionDetector::GetObjectToObjectPairNameList_(
     const std::string& object_name1, const std::string& object_name2) {
-  // Get object name
+  // Get the object name
   std::vector<std::string> name_list1(GetChildObjectNameList_(object_name1));
   std::vector<std::string> name_list2(GetChildObjectNameList_(object_name2));
-  // Create object name pair
+  // Create object name pairs
   std::vector<PairString> pair_name_list;
   pair_name_list.reserve(name_list1.size() * name_list2.size());
   for (std::vector<std::string>::iterator name1 = name_list1.begin();
@@ -1405,14 +1405,14 @@ std::vector<PairString> RobotCollisionDetector::GetObjectToObjectPairNameList_(
   return pair_name_list;
 }
 
-// Create list of object name pairs of object and group
+// Create a list of object-group name pairs
 std::vector<PairString> RobotCollisionDetector::GetObjectToGroupPairNameList_(
     const std::string& object_name,
     const std::string& group_name) {
-  // Get names of objects belonging to group
+  // Get the names of objects belonging to the group
   std::vector<std::string> name_in_group(GetObjectNameListByGroup(group_name));
 
-  // Create object name pair
+  // Create object name pairs
   std::vector<PairString> pair_name_list;
   for (std::vector<std::string>::iterator it = name_in_group.begin();
        it != name_in_group.end(); ++it) {
@@ -1424,14 +1424,14 @@ std::vector<PairString> RobotCollisionDetector::GetObjectToGroupPairNameList_(
   return pair_name_list;
 }
 
-// Get child object name from object name
+// Get child object names from object name
 std::vector<std::string> RobotCollisionDetector::GetChildObjectNameList_(
     const std::string& object_name) {
   std::vector<std::string> name_list;
   std::map<std::string, OuterObjectParameters>::iterator it =
       outer_object_list_.find(object_name);
   if (it != outer_object_list_.end()) {
-    // Decompose into child object name if external object
+    // Decompose into child object names if it is an external object
     for (uint32_t i = 0; i < it->second.base_to_child.size(); i++) {
       name_list.push_back(MakeChildObjectName(object_name, i));
     }
@@ -1441,7 +1441,7 @@ std::vector<std::string> RobotCollisionDetector::GetChildObjectNameList_(
     }
     return name_list;
   } else if (IsInnerObject_(object_name) || IsChildObject_(object_name)) {
-    // Do not decompose robot parts, child objects
+    // Do not decompose robot parts or child objects
     name_list.push_back(object_name);
     return name_list;
   }
@@ -1449,7 +1449,7 @@ std::vector<std::string> RobotCollisionDetector::GetChildObjectNameList_(
       "GetChildObjectNameList_ error: invalid object " + object_name);
 }
 
-// Erase from bounding_box_
+// Remove from bounding_box_
 void RobotCollisionDetector::EraseCuboid_(const std::string& box_name) {
   for (std::vector<CuboidSeq>::iterator cuboids = bounding_box_.boxes.begin();
        cuboids != bounding_box_.boxes.end(); ++cuboids) {
@@ -1540,7 +1540,7 @@ void RobotCollisionDetector::CreateRobotModel_(
   coldet_->SetAnchor();
   inner_coldet_->SetAnchor();
 
-  // Set objects to exclude from interference check
+  // Set objects to be excluded from interference check
   std::vector<PairString> disable_object_pairs(
       robot_collision_config_->GetDisableObjectPairList());
   coldet_->DisableCollisionCheck(disable_object_pairs);

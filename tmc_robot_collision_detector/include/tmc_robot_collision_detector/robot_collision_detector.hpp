@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file robot_collision_detector.hpp
-/// @brief Perform interference check using robot model
+/// @brief Perform interference checks using the robot model
 #ifndef TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_HPP_
 #define TMC_ROBOT_COLLISION_DETECTOR_ROBOT_COLLISION_DETECTOR_HPP_
 
@@ -69,12 +69,12 @@ class RobotCollisionDetector {
   /// @param [in] robot_model Kinematic model of the robot
   /// @param [in] robot_model_config Path to the robot model configuration file
   /// @param [in] robot_collision_config Path to the interference check configuration file
-  /// @param [in] engine Name of the engine used for interference check
+  /// @param [in] engine Name of the engine used for interference checks
   /// @par Behavior:
-  /// - Create a robot kinematic model.
-  /// - Load interference check settings.
-  /// - Create an interference check space.
-  /// - In each case, if it fails, throw an exception.
+  /// - Create the robot kinematic model.
+  /// - Load the interference check configuration.
+  /// - Create the interference check space.
+  /// - In each case, throw an exception if it fails.
   RobotCollisionDetector(const tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr& robot_model,
                          const std::string& robot_model_config,
                          const std::string& robot_collision_config,
@@ -83,12 +83,12 @@ class RobotCollisionDetector {
   /// @brief Constructor. Performs various initializations
   /// @param [in] robot_model_config Path to the robot model configuration file
   /// @param [in] robot_collision_config Path to the interference check configuration file
-  /// @param [in] engine Name of the engine used for interference check
+  /// @param [in] engine Name of the engine used for interference checks
   /// @par Behavior:
-  /// - Create a robot kinematic model.
-  /// - Load interference check settings.
-  /// - Create an interference check space.
-  /// - In each case, if it fails, throw an exception.
+  /// - Create the robot kinematic model.
+  /// - Load the interference check configuration.
+  /// - Create the interference check space.
+  /// - In each case, throw an exception if it fails.
   RobotCollisionDetector(const std::string& robot_model_config,
                          const std::string& robot_collision_config,
                          const std::string& engine);
@@ -96,13 +96,13 @@ class RobotCollisionDetector {
   /// @brief Constructor. Performs various initializations
   /// @param [in] robot_model_config Path to the robot model configuration file
   /// @param [in] robot_collision_config Path to the interference check configuration file
-  /// @param [in] engine Name of the engine used for interference check
+  /// @param [in] engine Name of the engine used for interference checks
   /// @param [in] model_file_type Type of the robot model
   /// @par Behavior:
-  /// - Create a robot kinematic model.
-  /// - Load interference check settings.
-  /// - Create an interference check space.
-  /// - In each case, if it fails, throw an exception.
+  /// - Create the robot kinematic model.
+  /// - Load the interference check configuration.
+  /// - Create the interference check space.
+  /// - In each case, throw an exception if it fails.
   RobotCollisionDetector(const std::string& robot_model_config,
                          const std::string& robot_collision_config,
                          const std::string& engine,
@@ -113,7 +113,7 @@ class RobotCollisionDetector {
   /// @brief Input joint angle information
   /// @param [in] named_angle Joint angle information
   /// @par Behavior:
-  /// - Throw named_angle to the robot kinematic model.
+  /// - Pass named_angle to the robot kinematic model.
   /// - Update the interference check space based on the updated robot model.
   void SetRobotNamedAngle(
       const tmc_manipulation_types::JointState& named_angle);
@@ -127,19 +127,19 @@ class RobotCollisionDetector {
   }
 
   /// @brief Retrieve joint angle information
-  /// @param [in] name Joint name for which information is to be retrieved
+  /// @param [in] name Name of the joint to retrieve information for
   /// @return tmc_manipulation_types::JointState Joint angle information
   /// @par Behavior:
-  /// - Retrieve joint angle information for the joint named name from the robot kinematic model.
+  /// - Retrieve joint angle information for the specified joint name from the robot kinematic model.
   tmc_manipulation_types::JointState GetRobotNamedAngle(
       const tmc_manipulation_types::NameSeq& name) const {
     return robot_model_->GetNamedAngle(name);
   }
 
-  /// @brief Retrieve Min and Max of joints
-  /// @param [in] use_joints Joint names to retrieve
-  /// @param [out] min Lower limit array of joint angles
-  /// @param [out] max Upper limit array of joint angles
+  /// @brief Retrieve the Min and Max of a joint
+  /// @param [in] use_joints Names of the joints to retrieve
+  /// @param [out] min Lower limit of joint angles
+  /// @param [out] max Upper limit of joint angles
   void GetRobotAngleMinMax(
       const tmc_manipulation_types::NameSeq& use_joints,
       Eigen::VectorXd& min,
@@ -147,13 +147,13 @@ class RobotCollisionDetector {
     robot_model_->GetMinMax(use_joints, min, max);
   }
 
-  /// @brief Input robot's position and orientation
+  /// @brief Input the robot's position and orientation
   /// @param [in] Eigen::Affine3d Robot's position and orientation
   /// @par Behavior:
   /// - Retrieve the robot's position and orientation from the robot kinematic model.
   void SetRobotTransform(const Eigen::Affine3d& origin_to_robot);
 
-  /// @brief Retrieve robot's position and orientation
+  /// @brief Retrieve the robot's position and orientation
   /// @return Eigen::Affine3d Robot's position and orientation
   /// @par Behavior:
   /// - Retrieve the robot's position and orientation from the robot kinematic model.
@@ -161,57 +161,57 @@ class RobotCollisionDetector {
     return robot_model_->GetRobotTransform();
   }
 
-  /// @brief Create external object
-  /// @param [in] parameters Information of the external object const
+  /// @brief Create external objects
+  /// @param [in] parameters Information about the external object
   /// @par Behavior:
-  /// - Check if the number of poses and shape information of child objects are the same.
-  ///   If different, throw an exception.
-  /// - Check if the object name is set, if not, throw an exception.
+  /// - Verify that the number of child object poses matches the number of shape information.
+  ///   If they differ, throw an exception.
+  /// - Verify that the object name is set; if not, throw an exception.
   /// - Check if an object with the same name has already been created.
   ///   If it already exists, throw an exception.
   /// - Generate the object in the interference check space and
   ///   add it to the external object list.
   /// @attention
-  /// - The created object will be subject to interference check.
-  /// - The name of the child object will be the parent object name + # + serial number.
+  /// - The created object becomes subject to interference checks.
+  /// - The names of child objects are composed of the parent object name + # + serial number.
   void CreateOuterObject(
       const tmc_manipulation_types::OuterObjectParameters& parameters);
 
   /// @brief Construct an environment composed of Cuboids
   /// @param [in] map Vector of Cuboids
-  /// @param [in] enable_flag Enable/disable flag for interference check of Cuboids at creation
+  /// @param [in] enable_flag Enable/disable flag for interference checks when creating Cuboids
   ///             true=enabled, false=disabled
   /// @par Behavior:
   /// - Create Cuboids in the interference check space according to the map.
-  ///   If the name of the Cuboid is empty, throw an exception.
-  /// - Disable the interference check of the created Cuboid.
+  ///   If the Cuboid name is empty, throw an exception.
+  /// - Disable interference checks for the created Cuboids.
   /// - Add to the external object list.
   /// - Add to the Cuboid list.
   /// @attention
-  /// - If you just want to perform a simple interference check, it is recommended to set enable_flag to false
-  /// - The group of Cuboids will be CUBOID
+  /// - If you simply want to perform interference checks, it is recommended to set enable_flag to false.
+  /// - The group of Cuboids will be CUBOID.
   void CreateCuboids(const tmc_manipulation_types::CuboidSeq& map,
                      bool enable_flag);
 
   /// @brief Construct an environment composed of Cuboids
   /// @param [in] map Vector of Cuboids
-  /// @param [in] enable_flag Enable/disable flag for interference check of Cuboids at creation
+  /// @param [in] enable_flag Enable/disable flag for interference checks when creating Cuboids
   ///             true=enabled, false=disabled
-  /// @param [in] cuboid_group_name Group name of Cuboids
+  /// @param [in] cuboid_group_name Group name of the Cuboids
   /// @par Behavior:
   /// - Create Cuboids in the interference check space according to the map.
-  ///   If the name of the Cuboid is empty, throw an exception.
-  /// - Disable the interference check of the created Cuboid.
+  ///   If the Cuboid name is empty, throw an exception.
+  /// - Disable interference checks for the created Cuboids.
   /// - Add to the external object list.
   /// - Add to the Cuboid list.
   /// @attention
-  /// - If you just want to perform a simple interference check, it is recommended to set enable_flag to false
+  /// - If you simply want to perform interference checks, it is recommended to set enable_flag to false.
   void CreateCuboids(const tmc_manipulation_types::CuboidSeq& map,
                      bool enable_flag,
                      const std::string& cuboid_group_name);
 
-  /// @brief Discard external object
-  /// @param [in] object_name Name of the object to be discarded
+  /// @brief Discard external objects
+  /// @param [in] object_name Name of the object to discard
   /// @par Behavior:
   /// - Check if object_name is a robot part.
   ///   If it is a robot part, do nothing.
@@ -229,77 +229,77 @@ class RobotCollisionDetector {
   /// @par Behavior:
   /// - Discard all external objects from the interference check space.
   /// @attention
-  /// - All grasped objects will also be discarded.
+  /// - Grasped objects will also be discarded.
   /// - All Cuboids will also be discarded.
   void DestroyAllOuterObject(void);
 
-  /// @brief Discard environment composed of Cuboids
+  /// @brief Discard the environment composed of Cuboids
   /// @par Behavior:
   /// - Discard Cuboids existing in the Cuboid list from the interference check space.
   /// - Discard the Cuboid list.
   void DestroyCuboids();
 
-  /// @brief Retrieve object information
-  /// @param [in] object_name Object name
-  /// @return OuterObjectParameters Object information
+  /// @brief Retrieve information about an object
+  /// @param [in] object_name Name of the object
+  /// @return OuterObjectParameters Information about the object
   /// @par Behavior:
   /// - If it is an external object, retrieve and return information from the external object list.
   /// - Otherwise, retrieve and return information from the interference check space.
-  /// - If object_name is a non-existent object name, throw an exception.
+  /// - If object_name does not exist, throw an exception.
   tmc_manipulation_types::OuterObjectParameters GetObjectParameter(
       const std::string& object_name) const;
 
-  /// @brief Retrieve information of all external objects
-  /// @return OuterObjectParametersSeq Information of all external objects
+  /// @brief Retrieve information about all external objects
+  /// @return OuterObjectParametersSeq Information about all external objects
   /// @par Behavior:
   /// - Return the external object list.
   tmc_manipulation_types::OuterObjectParametersSeq
   GetAllOuterObjectParameters(void) const;
 
-  /// @brief Enable interference check for an object
-  /// @param [in] object_name Object name
+  /// @brief Enable interference checks for an object
+  /// @param [in] object_name Name of the object
   /// @par Behavior:
-  /// - Enable interference check for the object in the interference check space.
+  /// - Enable interference checks for the object in the interference check space.
   /// @attention
-  /// - If a parent object is specified, all child objects will be targeted.
-  /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a parent object is specified, all child objects are targeted.
+  /// - If a child object is specified, only the child object is targeted.
+  /// - If a Cuboid is specified, it is removed from the Cuboid list and
+  ///   becomes a simple external object.
   void EnableCollisionObject(const std::string& object_name);
 
-  /// @brief Disable interference check for an object
-  /// @param [in] object_name Object name
+  /// @brief Disable interference checks for an object
+  /// @param [in] object_name Name of the object
   /// @par Behavior:
-  /// - Disable interference check for the object in the interference check space.
+  /// - Disable interference checks for the object in the interference check space.
   /// @attention
-  /// - If a parent object is specified, all child objects will be targeted.
-  /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a parent object is specified, all child objects are targeted.
+  /// - If a child object is specified, only the child object is targeted.
+  /// - If a Cuboid is specified, it is removed from the Cuboid list and
+  ///   becomes a simple external object.
   void DisableCollisionObject(const std::string& object_name);
 
   /// @brief Change the group of an object
-  /// @param [in] object_name Object name
-  /// @param [in] category Group bit to change
+  /// @param [in] object_name Name of the object
+  /// @param [in] category Group bit to change to
   /// @par Behavior:
   /// - Change the group of the object in the interference check space.
   /// @attention
-  /// - If a parent object is specified, all child objects will be targeted.
-  /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a parent object is specified, all child objects are targeted.
+  /// - If a child object is specified, only the child object is targeted.
+  /// - If a Cuboid is specified, it is removed from the Cuboid list and
+  ///   becomes a simple external object.
   void SetObjectGroup(const std::string& object_name, uint16_t category);
 
-  /// @brief Reset the group of an object to default
+  /// @brief Reset the group of objects to default
   /// @param [in] object_name Object name
   /// @par Behavior:
   /// - Retrieve the default group bit from the interference check settings
-  /// - Change the group of the object in the interference check space.
+  /// - Change the group of objects in the interference check space.
   /// @attention
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void SetObjectDefaultGroup(const std::string& object_name);
 
   /// @brief Retrieve the group of an object
@@ -320,26 +320,26 @@ class RobotCollisionDetector {
 
   /// @brief Change the filter of an object
   /// @param [in] object_name Object name
-  /// @param [in] filter Filter bit to change
+  /// @param [in] filter Filter bit to be changed
   /// @par Behavior:
-  /// - Change the filter of the object in the interference check space.
+  /// - Change the filter of objects in the interference check space.
   /// @attention
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void SetObjectFilter(const std::string& object_name, uint16_t filter);
 
   /// @brief Reset the filter of an object to default
   /// @param [in] object_name Object name
   /// @par Behavior:
   /// - Retrieve the default filter bit from the interference check settings
-  /// - Change the filter of the object in the interference check space.
+  /// - Change the filter of objects in the interference check space.
   /// @attention
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void SetObjectDefaultFilter(const std::string& object_name);
 
   /// @brief Retrieve the filter of an object
@@ -358,89 +358,89 @@ class RobotCollisionDetector {
   /// - Retrieve the default filter bit from the interference check settings
   uint16_t GetObjectDefaultFilter(const std::string& object_name) const;
 
-  /// @brief Add a pair of objects to be excluded from interference check
+  /// @brief Add a pair of objects to be excluded from interference checks
   /// @param [in] object_name1 Object name
   /// @param [in] object_name2 Object name
   /// @par Behavior:
-  /// - Add/remove from the exclusion pair list and additional pair list held by the interference check class.
-  ///
+  /// - Add/remove pairs to/from the exclusion pair list
+  ///   and the additional pair list held by the interference check class.
   /// @attention
   /// - To cancel Enable, specify the same pair with Disable.
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void DisableCollisionCheckObjectToObject(const std::string& object_name1,
                                            const std::string& object_name2);
 
-  /// @brief Add a pair of objects to be included in interference check
+  /// @brief Add a pair of objects to be included in interference checks
   /// @param [in] object_name1 Object name
   /// @param [in] object_name2 Object name
   /// @par Behavior:
-  /// - Add/remove from the exclusion pair list and additional pair list held by the interference check class.
-  ///
+  /// - Add/remove pairs to/from the exclusion pair list
+  ///   and the additional pair list held by the interference check class.
   /// @attention
   /// - To cancel Enable, specify the same pair with Disable.
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void EnableCollisionCheckObjectToObject(const std::string& object_name1,
                                           const std::string& object_name2);
 
-  /// @brief Add a pair of object-group to be excluded from interference check
+  /// @brief Add a pair of object-group to be excluded from interference checks
   /// @param [in] object_name Object name
   /// @param [in] group_name Group name
   /// @par Behavior:
-  /// - Add/remove from the exclusion pair list and additional pair list held by the interference check class.
-  ///
+  /// - Add/remove pairs to/from the exclusion pair list
+  ///   and the additional pair list held by the interference check class.
   /// @attention
   /// - To cancel Enable, specify the same pair with Disable.
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void DisableCollisionCheckObjectToGroup(const std::string& object_name,
                                           const std::string& group_name);
 
-  /// @brief Add a pair of object-group to be included in interference check
+  /// @brief Add a pair of object-group to be included in interference checks
   /// @param [in] object_name Object name
   /// @param [in] group_name Group name
   /// @par Behavior:
-  /// - Add/remove from the exclusion pair list and additional pair list held by the interference check class.
-  ///
+  /// - Add/remove pairs to/from the exclusion pair list
+  ///   and the additional pair list held by the interference check class.
   /// @attention
   /// - To cancel Enable, specify the same pair with Disable.
   /// - If a parent object is specified, all child objects will be targeted.
   /// - If a child object is specified, only the child object will be targeted.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void EnableCollisionCheckObjectToGroup(const std::string& object_name,
                                          const std::string& group_name);
 
-  /// @brief Change the filter of objects belonging to each group to exclude from interference check
-  ///
+  /// @brief Change the filter of objects belonging to each group
+  ///        to exclude them from interference checks
   /// @param [in] group_name1 Group name
   /// @param [in] group_name2 Group name
   /// @par Behavior:
   /// - Retrieve the list of objects belonging to each group.
-  /// - Manipulate the filter of objects to not perform interference check.
+  /// - Manipulate the filter of objects to prevent interference checks.
   void DisableCollisionCheckGroupToGroup(const std::string& group_name1,
                                          const std::string& group_name2);
 
-  /// @brief Change the filter of objects belonging to each group to include in interference check
-  ///
+  /// @brief Change the filter of objects belonging to each
+  ///        group to include them in interference checks
   /// @param [in] group_name1 Group name
   /// @param [in] group_name2 Group name
   /// @par Behavior:
   /// - Retrieve the list of objects belonging to each group.
-  /// - Manipulate the filter of objects to perform interference check.
+  /// - Manipulate the filter of objects to enable interference checks.
   void EnableCollisionCheckGroupToGroup(const std::string& group_name1,
                                         const std::string& group_name2);
 
   /// @brief Set the position and orientation of an object
-  /// @param [in] object_name Name of the object to set
-  /// @param [in] origin_to_object Position and orientation to set
+  /// @param [in] object_name Object name to be set
+  /// @param [in] origin_to_object Position and orientation to be set
   /// @par Behavior:
   /// - Check if object_name is a robot part.
   ///   If it is a robot part, do nothing.
@@ -449,44 +449,44 @@ class RobotCollisionDetector {
   /// - Check if object_name exists in the external object list.
   ///   If it does not exist, throw an exception.
   /// - Change the position and orientation of the object in the interference check space.
-  /// - Update the pose of the object information.
+  /// - Update the posture information of the object.
   /// @attention
-  /// - Only child objects cannot have their pose changed.
+  /// - The posture of child objects cannot be changed.
   ///   They follow the changes of the parent object.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become just an external object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming just an external object.
   void SetObjectTransform(const std::string& object_name,
                           const Eigen::Affine3d& origin_to_object);
 
   /// @brief Retrieve the position of an object
   /// @param [in] object_name Object name
-  /// @return Eigen::Affine3d Pose of the object
+  /// @return Eigen::Affine3d Object posture
   /// @par Behavior:
   /// - Check if object_name exists in the external object list.
-  ///   If it exists, return the pose from the object information.
+  ///   If it exists, return the posture of the object from the object information.
   /// - Retrieve the position and orientation of the object from the interference check space.
-  ///   If it can be retrieved, return that pose.
+  ///   If it can be retrieved, return the posture.
   /// - Retrieve the position and orientation of the object from the robot model.
-  ///   If it can be retrieved, return that pose.
-  /// - If it cannot be retrieved in any case, throw an exception.
+  ///   If it can be retrieved, return the posture.
+  /// - If it cannot be retrieved from any of the above, throw an exception.
   /// @attention
-  /// - The pose of child objects, parts that exist only in the robot model (joints, etc.),
-  ///   and the pose of Cuboids can also be retrieved.
+  /// - The posture of child objects, parts (joints, etc.) that exist only in the robot model,
+  ///   and the posture of cuboids can also be retrieved.
   Eigen::Affine3d GetObjectTransform(const std::string& object_name) const;
 
   /// @brief Grasp an object
-  /// @param [in] object_name Name of the object to be grasped
-  /// @param [in] frame_name Name of the object to grasp
+  /// @param [in] object_name Object name to be grasped
+  /// @param [in] frame_name Object name
   /// @param [in] held_frame_to_object
-  ///             Relative position of the object to be grasped based on the object to grasp
-  /// @param [in] held_group_name Group name of the object to grasp
+  ///             Relative position of the object to be grasped based on the grasping object
+  /// @param [in] held_group_name Group name of the grasping object
   /// @par Behavior:
-  /// - Check if object_name is already grasped. If it is, do nothing.
+  /// - Check if object_name is already being grasped. If it is, do nothing.
   /// - Check if object_name is a robot part.
   ///   If it is a robot part, do nothing.
   /// - Check if object_name exists in the external object list.
   ///   If it does not exist, throw an exception.
-  /// - According to the group name of the object to grasp,
+  /// - According to the group name of the grasping object,
   ///   change the group/filter of the object to be grasped.
   /// - Add frame_name, held_frame_to_object,
   ///   and held_group_name to the object information.
@@ -494,78 +494,78 @@ class RobotCollisionDetector {
   /// - Update the list of grasped objects.
   /// @attention
   /// - Only child objects cannot be grasped.
-  /// - If a Cuboid is specified, it will be removed from the Cuboid list and
-  ///   become a grasped object.
+  /// - If a cuboid is specified, it will be removed from the cuboid list,
+  ///   becoming a grasped object.
   void HoldObject(const std::string& object_name,
                   const std::string& frame_name,
                   const Eigen::Affine3d& held_frame_to_object,
                   const std::string& held_group_name);
 
-  /// @brief Grasp an object, the group of the object to grasp will be the same as frame_name
-  /// @param [in] object_name Name of the object to be grasped
-  /// @param [in] frame_name Name of the object to grasp
+  /// @brief Grasp an object, the group of the grasping object becomes the same as frame_name
+  /// @param [in] object_name Object name to be grasped
+  /// @param [in] frame_name Object name
   /// @param [in] held_frame_to_object
-  ///             Relative position of the object to be grasped based on the object to grasp
+  ///             Relative position of the object to be grasped based on the grasping object
   /// @par Behavior:
   /// - Retrieve the group name from frame_name.
   void HoldObject(const std::string& object_name,
                   const std::string& frame_name,
                   const Eigen::Affine3d& held_frame_to_object);
 
-  /// @brief Release the grasped object
-  /// @param [in] object_name Name of the object to release
+  /// @brief Release a grasped object
+  /// @param [in] object_name Object name to be released
   /// @par Behavior:
-  /// - Update the list of grasped objects. If object_name does not exist in the
-  ///   list of grasped objects, throw an exception.
+  /// - Update the list of grasped objects.
+  ///   If object_name does not exist in the list of grasped objects, throw an exception.
   /// - Reset the category/filter of the grasped object to default.
   void ReleaseObject(const std::string& object_name);
 
   /// @brief Release all grasped objects
   /// @par Behavior:
-  /// - Release all grasped objects
+  /// - Release all grasped objects.
   void ReleaseAllObject(void);
 
-  /// @brief Interference check, stop checking if interference is detected
-  /// @return bool True if interference occurs
+  /// @brief Interference check, terminate the check if interference is detected
+  /// @return bool True if interference is detected
   virtual bool CheckCollision();
 
   /// @brief Interference check, output the names of interfering objects
-  /// @param [in] end_flag If false, continue to the end
-  ///             Perform interference check and create an interference pair list
+  /// @param [in] end_flag If false, perform interference check until the end
+  ///             and create an interference pair list
   /// @param [out] dst_contact_pair Interference pair
-  /// @return bool True if interference occurs
+  /// @return bool True if interference is detected
   bool CheckCollision(bool end_flag,
                       std::vector<PairString>& dst_contact_pair);
 
-  /// @brief Search for nearby objects for each robot component
-  /// @param [in] extend_length Upper limit of distance to nearby objects
-  /// @param [in] top_n Number of objects to calculate accurate distance using GJK algorithm
-  /// @param [out] dst_result_list Information of nearby objects for each robot part
-  /// @return bool True if interference occurs
+  /// @brief Search for nearby objects for each robot part
+  /// @param [in] extend_length Maximum distance to nearby objects
+  /// @param [in] top_n Number of objects for which accurate distance is calculated using the GJK algorithm
+  /// @param [out] dst_result_list Information on nearby objects for each robot part
+  /// @return bool True if interference is detected
   /// @par Behavior:
-  /// - For robot parts and grasped objects,
-  ///   find nearby objects for both internal and external.
-  /// - Details of the search are described in the collision detector's README.
+  /// - Determine nearby objects for internal/external objects
+  ///   for robot parts and grasped objects.
+  /// - Details of the search are described in the collision detector README.
   bool CheckClosestObject(double extend_length, int32_t top_n,
                           std::vector<ClosestObject>& dst_result_list);
 
   /// @brief Search for nearby objects of object_name
-  /// @param [in] object_name Name of the object to search
-  /// @param [in] extend_length Upper limit of distance to nearby objects
-  /// @param [in] top_n Number of objects to calculate accurate distance using GJK algorithm
-  /// @param [out] dst_result Information of nearby objects for each robot part
-  /// @return bool True if interference occurs
+  /// @param [in] object_name Object name to be searched
+  /// @param [in] extend_length Maximum distance to nearby objects
+  /// @param [in] top_n Number of objects for which accurate distance is calculated using the GJK algorithm
+  /// @param [out] dst_result Information on nearby objects for each robot part
+  /// @return bool True if interference is detected
   /// @par Behavior:
-  /// - Details of the search are described in the collision detector's README.
+  /// - Details of the search are described in the collision detector README.
   bool CheckClosestObject(const std::string& object_name, double extend_length,
                           int32_t top_n, ClosestObject& dst_result);
 
   /// @brief Check if two objects are interfering
   /// @param [in] nameA Object A
   /// @param [in] nameB Object B
-  /// @param [in] dst_point Contact point of A and B
-  /// @param [in] dst_normal Normal at the contact point of A and B
-  /// @return bool True if interfering
+  /// @param [in] dst_point Contact point between A and B
+  /// @param [in] dst_normal Normal at the contact point between A and B
+  /// @return bool True if interference exists
   bool CheckCollisionPair(
       const std::string& nameA, const std::string& nameB,
       Eigen::Vector3d& dst_point, Eigen::Vector3d& dst_normal) {
@@ -576,7 +576,7 @@ class RobotCollisionDetector {
   /// @param [in] nameA Object A
   /// @param [in] nameB Object B
   /// @param [out] depth Depth of interference
-  /// @return bool True if interfering
+  /// @return bool True if interference exists
   bool CheckCollisionPair(
       const std::string& nameA, const std::string& nameB, double& depth) {
     return coldet_->CheckCollisionPair(nameA, nameB, depth);
@@ -585,7 +585,7 @@ class RobotCollisionDetector {
   /// @brief Ray casting function
   /// @param [in] start_point Starting point
   /// @param [in] direction Direction vector
-  /// @param [in] length Length of the ray
+  /// @param [in] length Ray length
   /// @param [out] dst_end_point Projected point
   /// @param [out] dst_name Name of the projected object
   /// @return bool True if a projected point exists
@@ -618,43 +618,43 @@ class RobotCollisionDetector {
   ///         AABB of the robot [xmin xmax; ymin ymax; zmin zmax]
   /// @par Behavior:
   /// - Retrieve the list of robot part names.
-  /// - Derive the AABB of the entire robot from each AABB.
+  /// - Derive the entire robot's AABB from each AABB.
   tmc_manipulation_types::AABB GetRobotAABB() const;
 
-  /// @brief Enable only Cuboids overlapping with the robot
-  /// @param [in] overlap_type Determine "overlapping" in the XY plane or by AABB
-  /// @param [in] group_type Determine "overlapping" for the entire robot or
-  ///                        for each part group
+  /// @brief Enable only the cuboids overlapping with the robot
+  /// @param [in] overlap_type Determine "overlapping" by XY plane or AABB
+  /// @param [in] group_type Determine "overlapping" for the entire robot
+  ///                        or for each part group
   /// @par Behavior:
-  /// - Retrieve the AABB of the robot according to group_type.
-  ///   If group_type is an invalid value, throw an exception.
-  /// - For Cuboids with interference check enabled, determine if they are overlapping according to overlap_type.
-  ///   If not overlapping, disable interference check.
-  /// - For Cuboids overlapping with the AABB obtained above in the x-axis direction,
-  ///   determine if they are overlapping according to overlap_type.
-  ///   If overlapping, enable interference check.
+  /// - Retrieve the robot's AABB according to group_type.
+  ///   If group_type has an invalid value, throw an exception.
+  /// - For cuboids with interference checks enabled, determine overlapping
+  ///   according to overlap_type. If not overlapping, disable interference checks.
+  /// - For cuboids overlapping with the AABB obtained above in the x-axis direction,
+  ///   determine overlapping according to overlap_type.
+  ///   If overlapping, enable interference checks.
   void RefleshOverlappedCuboids(CuboidOverlapType overlap_type,
                                 CuboidOverlapGroupType group_type);
 
-  /// @brief Enable interference check for Cuboids belonging to a group
-  /// @param [in] group_name Name of the group to enable
+  /// @brief Enable cuboids belonging to a group for interference checks
+  /// @param [in] group_name Group name to be enabled
   /// @par Behavior
-  /// - If group_name is an invalid value, throw an exception
-  /// - Enable interference check for Cuboids belonging to group_name
+  /// - If group_name has an invalid value, throw an exception
+  /// - Enable cuboids belonging to group_name for interference checks
   void EnableCuboids(const std::string& group_name);
 
-  /// @brief Disable interference check for Cuboids belonging to a group
-  /// @param [in] group_name Name of the group to disable
+  /// @brief Disable cuboids belonging to a group for interference checks
+  /// @param [in] group_name Group name to be disabled
   /// @par Behavior
-  /// - If group_name is an invalid value, throw an exception
-  /// - Disable interference check for Cuboids belonging to group_name
+  /// - If group_name has an invalid value, throw an exception
+  /// - Disable cuboids belonging to group_name for interference checks
   void DisableCuboids(const std::string& group_name);
 
-  /// @brief Return the number of enabled Cuboids, for testing/evaluation
-  /// @return uint32_t Number of enabled Cuboids
+  /// @brief Return the number of enabled cuboids, for testing/evaluation
+  /// @return uint32_t Number of enabled cuboids
   uint32_t GetEnableCuboidsNum();
 
-  /// @brief Retrieve the names of all objects existing in the interference check space
+  /// @brief Retrieve the names of all objects in the interference check space
   /// @return std::vector<std::string> Names of all objects
   std::vector<std::string> GetObjectNameList() const;
 
@@ -662,8 +662,8 @@ class RobotCollisionDetector {
   /// @param [in] group_name Group name
   /// @return std::vector<std::string> Names of objects belonging to the group
   /// @note
-  /// - Grasped objects will be the group of the part holding them
-  /// - Cuboids will be their respective groups
+  /// - Grasped objects belong to the group of the part grasping them
+  /// - Cuboids belong to their respective groups
   std::vector<std::string> GetObjectNameListByGroup(
       const std::string& group_name) const;
 
@@ -679,8 +679,8 @@ class RobotCollisionDetector {
 
  protected:
   /// @brief Set the attributes of an object
-  /// @param [in] object_name Name of the object to set
-  /// @param [in] set_property_function Function to set
+  /// @param [in] object_name Object name to be set
+  /// @param [in] set_property_function Function to be set
   void SetObjectProperty_(
       const std::string& object_name,
       std::function<void(const std::string&)> set_property_function);
@@ -697,39 +697,39 @@ class RobotCollisionDetector {
   /// @return bool True if it is a child object
   bool IsChildObject_(const std::string& object_name);
 
-  /// @brief Update the interference check model for nearby check of internal objects
+  /// @brief Update the interference check model for nearby checks of internal objects
   void UpdateInnerModel_(void);
 
   /// @brief Update the interference check model based on the robot's kinematic model
   void UpdateCollisionModel_(void);
 
-  /// @brief Create a list of object name pairs for object and object
+  /// @brief Create a list of object-object name pairs
   /// @param [in] object_name1 Object name
   /// @param [in] object_name2 Object name
-  /// @return std::vector<PairString> Combination of objects
+  /// @return std::vector<PairString> Object combinations
   std::vector<PairString> GetObjectToObjectPairNameList_(
       const std::string& object_name1, const std::string& object_name2);
 
-  /// @brief Create object name pairs for object and group
+  /// @brief Create object-group name pairs
   /// @param [in] object_name Object name
   /// @param [in] group_name Group name
-  /// @return std::vector<PairString> Combination of objects
+  /// @return std::vector<PairString> Object combinations
   std::vector<PairString> GetObjectToGroupPairNameList_(
       const std::string& object_name, const std::string& group_name);
 
-  /// @brief Retrieve child object names from object name
+  /// @brief Retrieve child object names from an object name
   /// @param [in] object_name Object name
   /// @return List of object names
   std::vector<std::string> GetChildObjectNameList_(
       const std::string& object_name);
 
   /// @brief Remove from bounding_box_
-  /// @param [in] box_name Name of the Cuboid to remove
+  /// @param [in] box_name Name of the cuboid to be removed
   void EraseCuboid_(const std::string& box_name);
 
-  /// @brief Retrieve robot part information from file
+  /// @brief Retrieve robot part information from a file
   /// @param [in] robot_model_config Path to the robot model configuration file
-  /// @param [in] model_file_type Type of the robot model
+  /// @param [in] model_file_type Type of robot model
   /// @return std::vector<tmc_manipulation_types::ObjectParameter>
   ///         Shape information of robot parts
   tmc_manipulation_types::ObjectParameterSeq GetRobotPartsShape_(
@@ -738,33 +738,33 @@ class RobotCollisionDetector {
 
   /// @brief Load the robot model and create the robot
   /// @param [in] model_config Path to the model file
-  /// @param [in] model_file_type Type of the robot model
+  /// @param [in] model_file_type Type of robot model
   void CreateRobotModel_(const std::string& model_config,
                          ModelFileType model_file_type);
 
-  /// @brief Subcontractor of the constructor
+  /// @brief Subroutine for the constructor
   /// @param [in] robot_model_config Path to the robot model configuration file
   /// @param [in] robot_collision_config Path to the interference check configuration file
-  /// @param [in] engine Name of the engine used for interference check
-  /// @param [in] model_file_type Type of the robot model
+  /// @param [in] engine Name of the engine used for interference checks
+  /// @param [in] model_file_type Type of robot model
   /// @par Behavior:
-  /// - Create a robot kinematic model.
-  /// - Load interference check settings.
-  /// - Create an interference check space.
-  /// - In each case, if it fails, throw an exception.
+  /// - Create the robot kinematic model.
+  /// - Load the interference check settings.
+  /// - Create the interference check space.
+  /// - If any of the above fails, throw an exception.
   void Init_(const std::string& robot_model_config,
              const std::string& robot_collision_config,
              const std::string& engine,
              ModelFileType model_file_type);
 
-  /// @brief Retrieve position from kinematic model, function to absorb differences in handling collision information of URDF
+  /// @brief Retrieve position from the kinematic model, a function to absorb differences in handling collision information in URDF
   /// @param [in] object_name Object name
-  /// @return Eigen::Affine3d Pose of the object
+  /// @return Eigen::Affine3d Object posture
   Eigen::Affine3d GetObjectTransformFromKinematicsModel_(const std::string& object_name) const;
 
   /// Interference check (both internal and external)
   tmc_collision_detector::ICollisionDetector::Ptr coldet_;
-  /// Interference check (for internal use)
+  /// Interference check (internal)
   tmc_collision_detector::ICollisionDetector::Ptr inner_coldet_;
   /// Robot forward kinematic model
   tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr robot_model_;
@@ -780,7 +780,7 @@ class RobotCollisionDetector {
   DumpEnvironmentalData environmental_data_;
   /// Cuboid
   BoundingBox bounding_box_;
-  /// Information for position/orientation of collision
+  /// Information for collision position/orientation
   std::map<std::string, CollisionFrameInfo> collision_frame_info_map_;
 };
 }  // namespace tmc_robot_collision_detector

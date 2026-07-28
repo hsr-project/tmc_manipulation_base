@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -42,22 +42,22 @@ DAMAGE.
 #include "tmc_robot_kinematics_model/robot_kinematics_model.hpp"
 
 namespace tmc_robot_kinematics_model {
-/// Function of tarp3 failed
+/// The function of tarp3 failed
 class Tarp3Error : public std::domain_error {
  public:
   explicit Tarp3Error(const std::string &error) :
     std::domain_error("error: " + error + " failed") {}
 };
 
-/// Wrapper of tarp3
+/// Wrapper for tarp3
 class Tarp3Wrapper : public IRobotKinematicsModel {
  public:
   explicit Tarp3Wrapper(const std::string& robot_model_config);
   virtual ~Tarp3Wrapper();
 
-  /// Input robot's position and orientation
+  /// Input the robot's position and orientation
   virtual void SetRobotTransform(const Eigen::Affine3d& transform);
-  /// Get robot's position and orientation b
+  /// Get the robot's position and orientation b
   virtual Eigen::Affine3d GetRobotTransform(void) const;
 
   /// Specify the robot's joint name and input the joint angle
@@ -68,9 +68,9 @@ class Tarp3Wrapper : public IRobotKinematicsModel {
   virtual tmc_manipulation_types::JointState GetNamedAngle(
       const tmc_manipulation_types::NameSeq& joint_names) const;
 
-  /// Get object's position and orientation
+  /// Get the object's position and orientation
   virtual Eigen::Affine3d GetObjectTransform(const std::string& name) const;
-  /// Get object's relative position and orientation
+  /// Get the object's relative position and orientation
   virtual Eigen::Affine3d GetObjectRelativeTransform(
       const std::string& base_name, const std::string& name) const;
 
@@ -80,11 +80,11 @@ class Tarp3Wrapper : public IRobotKinematicsModel {
                            const std::string& new_frame_name);
   /// Dynamically delete a frame
   virtual void DestroyFrame(const std::string& frame_name);
-  /// Get Jacobian
+  /// Get the Jacobian
   virtual Eigen::MatrixXd GetJacobian(
       const std::string& frame_name, const Eigen::Affine3d& frame_to_end,
       const std::vector<std::string>& use_joints);
-  /// Get Min and Max of the joint
+  /// Get the Min and Max of the joint
   virtual void GetMinMax(const tmc_manipulation_types::NameSeq& use_joints,
                          Eigen::VectorXd& min,
                          Eigen::VectorXd& max) const;

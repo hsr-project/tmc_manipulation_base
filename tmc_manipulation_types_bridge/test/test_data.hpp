@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -71,17 +71,17 @@ tmc_planning_msgs::msg::TaskSpaceRegion GenerateTaskSpaceRegionMsg() {
   task_space_region.origin_to_tsr.position.x = 1.0;
   task_space_region.origin_to_tsr.position.y = 2.0;
   task_space_region.origin_to_tsr.position.z = 3.0;
-  task_space_region.origin_to_tsr.orientation.x = 4.0;
-  task_space_region.origin_to_tsr.orientation.y = 5.0;
-  task_space_region.origin_to_tsr.orientation.z = 6.0;
-  task_space_region.origin_to_tsr.orientation.w = 7.0;
+  task_space_region.origin_to_tsr.orientation.x = 1.0;
+  task_space_region.origin_to_tsr.orientation.y = 0.0;
+  task_space_region.origin_to_tsr.orientation.z = 0.0;
+  task_space_region.origin_to_tsr.orientation.w = 0.0;
   task_space_region.tsr_to_end.position.x = 8.0;
   task_space_region.tsr_to_end.position.y = 9.0;
   task_space_region.tsr_to_end.position.z = 10.0;
-  task_space_region.tsr_to_end.orientation.x = 11.0;
-  task_space_region.tsr_to_end.orientation.y = 12.0;
-  task_space_region.tsr_to_end.orientation.z = 13.0;
-  task_space_region.tsr_to_end.orientation.w = 14.0;
+  task_space_region.tsr_to_end.orientation.x = 0.0;
+  task_space_region.tsr_to_end.orientation.y = 1.0;
+  task_space_region.tsr_to_end.orientation.z = 0.0;
+  task_space_region.tsr_to_end.orientation.w = 0.0;
   task_space_region.max_bounds = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5};
   task_space_region.min_bounds = {0.0, -0.1, -0.2, -0.3, -0.4, -0.5};
   return task_space_region;
@@ -104,10 +104,10 @@ moveit_msgs::msg::AttachedCollisionObject GenerateAttachCollisionObjectMsg() {
   attached_collision_object.object.pose.position.x = 0.1;
   attached_collision_object.object.pose.position.y = 0.2;
   attached_collision_object.object.pose.position.z = 0.3;
-  attached_collision_object.object.pose.orientation.x = 0.4;
-  attached_collision_object.object.pose.orientation.y = 0.5;
-  attached_collision_object.object.pose.orientation.z = 0.6;
-  attached_collision_object.object.pose.orientation.w = 0.7;
+  attached_collision_object.object.pose.orientation.x = 0.0;
+  attached_collision_object.object.pose.orientation.y = 0.0;
+  attached_collision_object.object.pose.orientation.z = 1.0;
+  attached_collision_object.object.pose.orientation.w = 0.0;
   return attached_collision_object;
 }
 
@@ -118,10 +118,10 @@ sensor_msgs::msg::MultiDOFJointState GenerateMultiDOFJointStateMsg() {
   multi_dof_joint_state.transforms[0].translation.x = 1.0;
   multi_dof_joint_state.transforms[0].translation.y = 2.0;
   multi_dof_joint_state.transforms[0].translation.z = 3.0;
-  multi_dof_joint_state.transforms[0].rotation.x = 4.0;
-  multi_dof_joint_state.transforms[0].rotation.y = 5.0;
-  multi_dof_joint_state.transforms[0].rotation.z = 6.0;
-  multi_dof_joint_state.transforms[0].rotation.w = 7.0;
+  multi_dof_joint_state.transforms[0].rotation.x = 0.0;
+  multi_dof_joint_state.transforms[0].rotation.y = 0.0;
+  multi_dof_joint_state.transforms[0].rotation.z = 0.0;
+  multi_dof_joint_state.transforms[0].rotation.w = 1.0;
   multi_dof_joint_state.twist.resize(1);
   multi_dof_joint_state.twist[0].linear.x = 0.1;
   multi_dof_joint_state.twist[0].linear.y = 0.2;
@@ -143,7 +143,7 @@ tmc_manipulation_types::MultiDOFJointState GenerateMultiDOFJointState() {
   tmc_manipulation_types::MultiDOFJointState multi_dof_joint_state;
   multi_dof_joint_state.names = {"joint_0"};
   multi_dof_joint_state.poses = {
-      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(4.0, 5.0, 6.0, 7.0)};
+      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0)};
   multi_dof_joint_state.twist.resize(1);
   multi_dof_joint_state.twist[0] << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
   multi_dof_joint_state.wrench.resize(1);
@@ -225,10 +225,10 @@ trajectory_msgs::msg::MultiDOFJointTrajectory GenerateMultiDOFJointTrajectoryMsg
   multi_dof_trajectory.points[0].transforms[0].translation.x = 1.0;
   multi_dof_trajectory.points[0].transforms[0].translation.y = 2.0;
   multi_dof_trajectory.points[0].transforms[0].translation.z = 3.0;
-  multi_dof_trajectory.points[0].transforms[0].rotation.x = 4.0;
-  multi_dof_trajectory.points[0].transforms[0].rotation.y = 5.0;
-  multi_dof_trajectory.points[0].transforms[0].rotation.z = 6.0;
-  multi_dof_trajectory.points[0].transforms[0].rotation.w = 7.0;
+  multi_dof_trajectory.points[0].transforms[0].rotation.x = 1.0;
+  multi_dof_trajectory.points[0].transforms[0].rotation.y = 0.0;
+  multi_dof_trajectory.points[0].transforms[0].rotation.z = 0.0;
+  multi_dof_trajectory.points[0].transforms[0].rotation.w = 0.0;
   multi_dof_trajectory.points[0].velocities.resize(1);
   multi_dof_trajectory.points[0].velocities[0].linear.x = 0.1;
   multi_dof_trajectory.points[0].velocities[0].linear.y = 0.2;
@@ -249,10 +249,10 @@ trajectory_msgs::msg::MultiDOFJointTrajectory GenerateMultiDOFJointTrajectoryMsg
   multi_dof_trajectory.points[1].transforms[0].translation.x = 11.0;
   multi_dof_trajectory.points[1].transforms[0].translation.y = 12.0;
   multi_dof_trajectory.points[1].transforms[0].translation.z = 13.0;
-  multi_dof_trajectory.points[1].transforms[0].rotation.x = 14.0;
-  multi_dof_trajectory.points[1].transforms[0].rotation.y = 15.0;
-  multi_dof_trajectory.points[1].transforms[0].rotation.z = 16.0;
-  multi_dof_trajectory.points[1].transforms[0].rotation.w = 17.0;
+  multi_dof_trajectory.points[1].transforms[0].rotation.x = 0.0;
+  multi_dof_trajectory.points[1].transforms[0].rotation.y = 1.0;
+  multi_dof_trajectory.points[1].transforms[0].rotation.z = 0.0;
+  multi_dof_trajectory.points[1].transforms[0].rotation.w = 0.0;
   multi_dof_trajectory.points[1].velocities.resize(1);
   multi_dof_trajectory.points[1].velocities[0].linear.x = 1.1;
   multi_dof_trajectory.points[1].velocities[0].linear.y = 1.2;
@@ -277,9 +277,9 @@ tmc_manipulation_types::MultiDOFJointTrajectory GenerateMultiDOFJointTrajectory(
   multi_dof_trajectory.names = {"joint_0"};
   multi_dof_trajectory.path.resize(2);
   multi_dof_trajectory.path[0] = {
-      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(4.0, 5.0, 6.0, 7.0)};
+      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(0.0, 1.0, 0.0, 0.0)};
   multi_dof_trajectory.path[1] = {
-      Eigen::Translation3d(11.0, 12.0, 13.0) * Eigen::Quaterniond(14.0, 15.0, 16.0, 17.0)};
+      Eigen::Translation3d(11.0, 12.0, 13.0) * Eigen::Quaterniond(0.0, 0.0, 1.0, 0.0)};
   return multi_dof_trajectory;
 }
 
@@ -288,14 +288,14 @@ tmc_manipulation_types::TimedMultiDOFJointTrajectory GenerateTimedMultiDOFJointT
   multi_dof_trajectory.joint_names = {"joint_0"};
   multi_dof_trajectory.points.resize(2);
   multi_dof_trajectory.points[0].transforms = {
-      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(4.0, 5.0, 6.0, 7.0)};
+      Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::Quaterniond(0.0, 0.0, 0.0, 1.0)};
   multi_dof_trajectory.points[0].velocities.resize(1);
   multi_dof_trajectory.points[0].velocities[0] << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
   multi_dof_trajectory.points[0].accelerations.resize(1);
   multi_dof_trajectory.points[0].accelerations[0] << -0.1, -0.2, -0.3, -0.4, -0.5, -0.6;
   multi_dof_trajectory.points[0].time_from_start = 8.0;
   multi_dof_trajectory.points[1].transforms = {
-      Eigen::Translation3d(11.0, 12.0, 13.0) * Eigen::Quaterniond(14.0, 15.0, 16.0, 17.0)};
+      Eigen::Translation3d(11.0, 12.0, 13.0) * Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0)};
   multi_dof_trajectory.points[1].velocities.resize(1);
   multi_dof_trajectory.points[1].velocities[0] << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6;
   multi_dof_trajectory.points[1].accelerations.resize(1);

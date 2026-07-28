@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -60,38 +60,38 @@ class PinocchioWrapper : public IRobotKinematicsModel {
   explicit PinocchioWrapper(const std::string& robot_description);
   virtual ~PinocchioWrapper() = default;
 
-  /// Initialization of the robot model
+  /// Robot model initialization
   void Initialize(const std::string& robot_description) override;
 
   /// Input the robot's position and orientation
   void SetRobotTransform(const Eigen::Affine3d& transform) override;
-  /// Get the robot's position and orientation
+  /// Retrieve the robot's position and orientation
   Eigen::Affine3d GetRobotTransform() const override;
 
-  /// Specify the robot's joint name and input the joint angle
+  /// Specify the robot's joint name and input its joint angle
   void SetNamedAngle(const tmc_manipulation_types::JointState& angle) override;
-  /// Get the robot's joint name and its angle
+  /// Retrieve the robot's joint name and its angle
   tmc_manipulation_types::JointState GetNamedAngle() const override;
-  /// Get the robot's joint name and its angle
+  /// Retrieve the robot's joint name and its angle
   tmc_manipulation_types::JointState GetNamedAngle(const tmc_manipulation_types::NameSeq& joint_names) const override;
 
-  /// Get the object's position and orientation
+  /// Retrieve the object's position and orientation
   Eigen::Affine3d GetObjectTransform(const std::string& name) const override;
-  /// Get the object's relative position and orientation
+  /// Retrieve the object's relative position and orientation
   Eigen::Affine3d GetObjectRelativeTransform(const std::string& base_name, const std::string& name) const override;
 
   /// Dynamically add a frame
   void CreateFrame(const std::string& parent_frame_name,
                    const Eigen::Affine3d& transform,
                    const std::string& new_frame_name) override;
-  /// Dynamically delete a frame
+  /// Dynamically remove a frame
   void DestroyFrame(const std::string& frame_name) override;
 
-  /// Get the Jacobian
+  /// Retrieve the Jacobian
   Eigen::MatrixXd GetJacobian(const std::string& frame_name,
                               const Eigen::Affine3d& frame_to_end,
                               const std::vector<std::string>& use_joints) override;
-  /// Get the Min and Max of the joint
+  /// Retrieve the Min and Max of the joint
   void GetMinMax(const tmc_manipulation_types::NameSeq& use_joints,
                  Eigen::VectorXd& min,
                  Eigen::VectorXd& max) const override;
@@ -100,7 +100,7 @@ class PinocchioWrapper : public IRobotKinematicsModel {
   pinocchio::Model model_;
   std::shared_ptr<pinocchio::Data> data_;
 
-  // The Get-type function that calls ExecuteFK is const, but it is efficient to update data_ in ExecuteFK
+  // Although the Get-type function calling ExecuteFK is const, it is more efficient to update data_ with ExecuteFK
   // Reluctantly make it mutable
   void ExecuteFK() const;
   mutable bool do_fk_;

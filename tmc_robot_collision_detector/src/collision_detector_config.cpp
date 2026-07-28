@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file collision_detector_config.cpp
-/// @brief Holds the settings for interference check
+/// @brief Holds the settings for interference checks
 
 #include <stdio.h>
 
@@ -67,13 +67,13 @@ CollisionDetectorConfig::CollisionDetectorConfig(
     throw std::domain_error("error: cannot parse robot_collision_pair");
   }
 
-  // Pair of group names that do not perform interference check
+  // Pair of group names that do not perform interference checks
   std::vector<PairString> non_contact_group_list;
-  // List of object/group names that do not perform interference check
+  // List of object/group names that do not perform interference checks
   std::vector<PairString> non_contact_list;
   // Pair of neighboring object names within the robot
   std::vector<PairString> non_check_inner_distance_list;
-  // Load group
+  // Load groups
   TiXmlElement* root = xml.FirstChildElement();
   for (TiXmlElement* group = root->FirstChildElement("group");
        group != NULL;
@@ -89,7 +89,7 @@ CollisionDetectorConfig::CollisionDetectorConfig(
     }
   }
 
-  // Get group name of robot parts
+  // Retrieve group names for robot parts
   TiXmlElement* robot_parts_group = root->FirstChildElement("robot-parts-group");
   if (robot_parts_group != NULL) {
     for (TiXmlElement* group = robot_parts_group->FirstChildElement("group");
@@ -121,7 +121,7 @@ CollisionDetectorConfig::CollisionDetectorConfig(
     }
   }
 
-  // Load pairs to ignore in internal neighboring parts check
+  // Load pairs to ignore in internal neighboring part checks
   TiXmlElement* non_check = root->FirstChildElement("non-check-inner-distance");
   if (non_check != NULL) {
     for (TiXmlElement* pair = non_check->FirstChildElement("pair");
@@ -169,22 +169,22 @@ CollisionDetectorConfig::CollisionDetectorConfig(
     }
   }
 
-  // Create category and filter
+  // Create categories and filters
   for (uint32_t i = 0; i < group_name_.size(); i++) {
     uint16_t category = 1 << (i);
     group_bit_list_.insert(std::pair<std::string, uint16_t>(group_name_.at(i),
                                                             category));
-    // Set filter to interfere with others for now
+    // Set filters to initially interfere with everything except itself
     filter_bit_list_.insert(
         std::pair<std::string, uint16_t>(group_name_.at(i), 0xFFFF - category));
   }
-  // Adjust filter using the list that does not perform interference check
+  // Adjust filters using the list of non-interfering checks
   for (std::vector<PairString >::iterator it = non_contact_group_list.begin();
        it != non_contact_group_list.end(); ++it) {
     SetNonContactPairToFilter_(it->first, it->second);
     SetNonContactPairToFilter_(it->second, it->first);
   }
-  // Adjust internal filter using the list of neighboring object names within the robot
+  // Adjust internal filters using the list of neighboring object names within the robot
   inner_filter_bit_list_ = filter_bit_list_;
   for (std::vector<PairString >::iterator it =
        non_check_inner_distance_list.begin();
@@ -194,7 +194,7 @@ CollisionDetectorConfig::CollisionDetectorConfig(
   }
 }
 
-// Get group bit of object
+// Retrieve group bits for objects
 uint16_t CollisionDetectorConfig::GetGroupBitByObjectName(
     const std::string &object_name) const {
   std::map<std::string, std::string>::const_iterator it;
@@ -205,7 +205,7 @@ uint16_t CollisionDetectorConfig::GetGroupBitByObjectName(
   return GetGroupBitByGroupName(it->second);
 }
 
-// Get filter bit of object
+// Retrieve filter bits for objects
 uint16_t CollisionDetectorConfig::GetFilterBitByObjectName(
     const std::string &object_name) const {
   std::map<std::string, std::string>::const_iterator it;
@@ -216,7 +216,7 @@ uint16_t CollisionDetectorConfig::GetFilterBitByObjectName(
   return GetFilterBitByGroupName(it->second);
 }
 
-// Get filter bit for searching neighboring objects within the robot
+// Retrieve filter bits for searching neighboring objects within the robot
 uint16_t CollisionDetectorConfig::GetInnerFilterBit(
     const std::string& object_name) const {
   std::map<std::string, std::string>::const_iterator group_name;
@@ -233,7 +233,7 @@ uint16_t CollisionDetectorConfig::GetInnerFilterBit(
   return it->second;
 }
 
-// Get group bit of group
+// Retrieve group bits for groups
 uint16_t CollisionDetectorConfig::GetGroupBitByGroupName(
     const std::string &group_name) const {
   std::map<std::string, uint16_t>::const_iterator it;
@@ -244,7 +244,7 @@ uint16_t CollisionDetectorConfig::GetGroupBitByGroupName(
   return it->second;
 }
 
-// Get filter bit of group
+// Retrieve filter bits for groups
 uint16_t CollisionDetectorConfig::GetFilterBitByGroupName(
     const std::string &group_name) const {
   std::map<std::string, uint16_t>::const_iterator it;
@@ -255,7 +255,7 @@ uint16_t CollisionDetectorConfig::GetFilterBitByGroupName(
   return it->second;
 }
 
-// Get group name from object name
+// Retrieve group names from object names
 std::string CollisionDetectorConfig::GetBelongedGroupName(
     const std::string& object_name) const {
   std::map<std::string, std::string>::const_iterator it;
@@ -266,7 +266,7 @@ std::string CollisionDetectorConfig::GetBelongedGroupName(
   return it->second;
 }
 
-// Get object name belonging to group name
+// Retrieve object names belonging to a group name
 std::vector<std::string> CollisionDetectorConfig::GetObjectListInGroup(
     const std::string& group_name) const {
   std::vector<std::string> object_list;
@@ -282,20 +282,20 @@ std::vector<std::string> CollisionDetectorConfig::GetObjectListInGroup(
   return object_list;
 }
 
-// Set group and filter
+// Set groups and filters
 void CollisionDetectorConfig::SetConfig(
     const std::string& group_name, uint16_t category, uint16_t filter) {
-  // Check if group name exists
+  // Check if the group name exists
   if (std::find(group_name_.begin(), group_name_.end(), group_name) ==
       group_name_.end()) {
     throw NonExistName(group_name);
   }
-  // Set
+  // Set configurations
   group_bit_list_.find(group_name)->second = category;
   filter_bit_list_.find(group_name)->second = filter;
 }
 
-// Set category/filter to not perform interference check
+// Set categories/filters to avoid interference checks
 void CollisionDetectorConfig::SetNonContactPairToFilter_(
     const std::string &groupA,
     const std::string &groupB) {
@@ -312,7 +312,7 @@ void CollisionDetectorConfig::SetNonContactPairToFilter_(
   filter->second &= ~category->second;
 }
 
-// Set category/filter to not perform interference check
+// Set categories/filters to avoid interference checks
 void CollisionDetectorConfig::SetNotCheckInnerPairToFilter_(
     const std::string& groupA,
     const std::string& groupB) {

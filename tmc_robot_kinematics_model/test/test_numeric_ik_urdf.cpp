@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     test_numeric_ik_urdf.cpp
-/// @brief    Test of NumericIKSolver in urdf
+/// @brief    Test of NumericIKSolver in URDF
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.04.09
@@ -41,7 +41,7 @@ DAMAGE.
 
 #include <tmc_manipulation_tests/configs.hpp>
 
-// Include pinocchio headers before boost-related ones to avoid build errors
+// Since including pinocchio headers after boost headers causes build failure, include them first
 #include <tmc_robot_kinematics_model/pinocchio_wrapper.hpp>
 
 #include <tmc_robot_kinematics_model/numeric_ik_solver.hpp>
@@ -86,7 +86,7 @@ double GetPosition(JointState joint_state, std::string name) {
   throw std::invalid_argument("cannot found joint");
 }
 
-/// Calculate displacement between two postures
+/// Calculate the displacement between two postures
 double CalcPoseDiff(const Eigen::Affine3d pose_src,
                     const Eigen::Affine3d pose_dst) {
   Eigen::Matrix<double, 6, 1> diff;
@@ -149,22 +149,19 @@ TEST_F(NumericIKTest, SimpleCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req;
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
-
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  ASSERT_EQ(kSuccess, solver->Solve(req, solution, hand_result));
-  EXPECT_LT(CalcPoseDiff(hand_result, hand), kEpsilon);
 
   std::vector<IKResponse> responses;
   EXPECT_EQ(kSuccess, solver->Solve(req, responses));
   EXPECT_EQ(1, responses.size());
-  EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, hand), kEpsilon);
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(responses[0].origin_to_ends[0], hand), kEpsilon);
 }
 
 // Case including infinite rotation joints
@@ -177,10 +174,11 @@ TEST_F(NumericIKTest, ContinuousJoint) {
   const auto goal_pose = robot_->GetObjectTransform("dummy_continuous_link");
 
   IKRequest req;
-  req.frame_name = "dummy_continuous_link";
-  req.frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "dummy_continuous_link";
+  req.target_frames[0].frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames[0].ref_origin_to_end = goal_pose;
   req.origin_to_base = Eigen::Affine3d::Identity();
-  req.ref_origin_to_end = goal_pose;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
   req.use_joints.push_back("dummy_continuous_joint");
@@ -188,13 +186,14 @@ TEST_F(NumericIKTest, ContinuousJoint) {
 
   IKSolver::Ptr solver(new NumericIKSolver(IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
 
-  JointState solution;
-  Eigen::Affine3d result_pose;
-  ASSERT_EQ(kSuccess, solver->Solve(req, solution, result_pose));
-  EXPECT_LT(CalcPoseDiff(result_pose, goal_pose), kEpsilon);
-  // Due to axis configuration, the rotation of 2.5 should be shared between joint6 and dummy_continuous_joint
-  EXPECT_NEAR(solution.position[5], 0.6 + 2.5 / 2.0, 0.05);
-  EXPECT_NEAR(solution.position[6], 2.5 / 2.0, 0.05);
+  std::vector<IKResponse> responses;
+  EXPECT_EQ(kSuccess, solver->Solve(req, responses));
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(responses[0].origin_to_ends[0], goal_pose), kEpsilon);
+  // Due to the axis configuration, the 2.5 rotation should be shared between joint6 and dummy_continuous_joint
+  EXPECT_NEAR(responses[0].solution_angle.position[5], 0.6 + 2.5 / 2.0, 0.05);
+  EXPECT_NEAR(responses[0].solution_angle.position[6], 2.5 / 2.0, 0.05);
 }
 
 // Case including mimic joints
@@ -202,20 +201,22 @@ TEST_F(NumericIKTest, MimicJoint) {
   const auto goal_pose = robot_->GetObjectTransform("dummy_mimic_link");
 
   IKRequest req;
-  req.frame_name = "dummy_mimic_link";
-  req.frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "dummy_mimic_link";
+  req.target_frames[0].frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames[0].ref_origin_to_end = goal_pose;
   req.origin_to_base = Eigen::Affine3d::Identity();
-  req.ref_origin_to_end = goal_pose;
   req.initial_angle = initial_angle_;
   req.initial_angle.position /= 10.0;
   req.use_joints = use_name_;
 
   IKSolver::Ptr solver(new NumericIKSolver(IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
 
-  JointState solution;
-  Eigen::Affine3d result_pose;
-  ASSERT_EQ(kSuccess, solver->Solve(req, solution, result_pose));
-  EXPECT_LT(CalcPoseDiff(result_pose, goal_pose), kEpsilon);
+  std::vector<IKResponse> responses;
+  EXPECT_EQ(kSuccess, solver->Solve(req, responses));
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(responses[0].origin_to_ends[0], goal_pose), kEpsilon);
 }
 
 // Exception occurs when specifying a non-existent joint
@@ -235,16 +236,41 @@ TEST_F(NumericIKTest, NoExistJoint) {
   use_name[4] = ("joint5");
   use_name[5] = ("joint6");
 
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name;
 
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
+  std::vector<IKResponse> responses;
+  EXPECT_ANY_THROW(solver->Solve(req, responses););
+}
+
+// Exception occurs when no target is specified
+TEST_F(NumericIKTest, NoTargetFrames) {
+  // Numerical solution only
+  IKSolver::Ptr solver(new NumericIKSolver(
+      IKSolver::Ptr(), robot_, kItr, kEpsilon, kConvergeThreshold));
+  Eigen::Affine3d unit(Eigen::Affine3d::Identity());
+  Eigen::Affine3d hand = Eigen::Translation3d(0.3, 0.0, 0.05) *
+      Eigen::AngleAxisd(M_PI/2.0, Eigen::Vector3d::UnitY());
+  IKRequest req;
+  NameSeq use_name(6);
+  use_name[0] = ("joint1");
+  use_name[1] = ("joint2");
+  use_name[2] = ("joint3");
+  use_name[3] = ("joint4");
+  use_name[4] = ("joint5");
+  use_name[5] = ("joint6");
+
+  req.origin_to_base = unit;
+  req.initial_angle = initial_angle_;
+  req.use_joints = use_name;
+
+  std::vector<IKResponse> responses;
+  EXPECT_ANY_THROW(solver->Solve(req, responses););
 }
 
 // Exception occurs when specifying a non-existent frame
@@ -264,19 +290,19 @@ TEST_F(NumericIKTest, NoExistFrame) {
   use_name[4] = ("joint5");
   use_name[5] = ("joint6");
 
-  req.frame_name = "no_exist_frame";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "no_exist_frame";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name;
 
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
+  std::vector<IKResponse> responses;
+  EXPECT_ANY_THROW(solver->Solve(req, responses););
 }
 
-// Exception occurs with settings of 6 degrees of freedom or less
+// Exception occurs with settings below 6 degrees of freedom
 TEST_F(NumericIKTest, UnderSixAxis) {
   // Numerical solution only
   IKSolver::Ptr solver(new NumericIKSolver(
@@ -292,16 +318,16 @@ TEST_F(NumericIKTest, UnderSixAxis) {
   use_name[3] = ("joint4");
   use_name[4] = ("joint5");
 
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name;
 
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  EXPECT_ANY_THROW(solver->Solve(req, solution, hand_result););
+  std::vector<IKResponse> responses;
+  EXPECT_ANY_THROW(solver->Solve(req, responses););
 }
 
 // Out of reach ends with Converge or MaxItr
@@ -314,20 +340,17 @@ TEST_F(NumericIKTest, OutOfRange) {
       Eigen::AngleAxisd(M_PI/2.0, Eigen::Vector3d::UnitY());
 
   IKRequest req;
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  IKResult result = solver->Solve(req, solution, hand_result);
-  EXPECT_TRUE((result == kMaxItr) || (result == kConverge));
 
   std::vector<IKResponse> responses;
-  EXPECT_EQ(kFail, solver->Solve(req, responses));
-  EXPECT_TRUE(responses.empty());
+  IKResult result = solver->Solve(req, responses);
+  EXPECT_TRUE((result == kMaxItr) || (result == kConverge));
 }
 
 // Apply interruption
@@ -336,33 +359,33 @@ TEST_F(NumericIKTest, Interruption) {
   IKSolver::Ptr solver(new NumericIKSolver(IKSolver::Ptr(), robot_, kItr, kEpsilon, 0.0));
 
   IKRequest req;
-  req.frame_name = "link7";
-  req.frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames[0].ref_origin_to_end =
+      Eigen::Translation3d(2.0, 0.0, 0.05) * Eigen::AngleAxisd(M_PI/2.0, Eigen::Vector3d::UnitY());
   req.origin_to_base = Eigen::Affine3d::Identity();
-  req.ref_origin_to_end = Eigen::Translation3d(2.0, 0.0, 0.05) * Eigen::AngleAxisd(M_PI/2.0, Eigen::Vector3d::UnitY());
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d hand_result;
-
   auto start = std::chrono::system_clock::now();
-  IKResult result = solver->Solve(req, solution, hand_result);
+  std::vector<IKResponse> responses;
+  IKResult result = solver->Solve(req, responses);
   auto end = std::chrono::system_clock::now();
   const auto no_interruption_duration = end - start;
 
-  // Ends with MaxItr because it doesn't reach + converge_threshold = 0.0
+  // Ends with MaxItr because it is out of reach + converge_threshold = 0.0
   EXPECT_EQ(result, kMaxItr);
 
-  // Should exit instantly with interruption
+  // With interruption, it should exit immediately
   std::function<bool()> func = []() -> bool{ return true; };
 
   start = std::chrono::system_clock::now();
-  result = solver->Solve(req, func, solution, hand_result);
+  result = solver->Solve(req, func, responses);
   end = std::chrono::system_clock::now();
 
   EXPECT_EQ(result, kInterruption);
-  // kItr times should differ, but for test stability, compare at 1/10 of that
+  // kItr times should differ, but for test stability, compare with 1/10 of that
   EXPECT_LT(end - start, no_interruption_duration / (kItr / 10));
 }
 
@@ -379,34 +402,26 @@ TEST_F(NumericIKTest, PlanarBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kPlanar);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
   EXPECT_NEAR(0.0, rotation.axis().x(), kEpsilon);
   EXPECT_NEAR(0.0, rotation.axis().y(), kEpsilon);
-
-  std::vector<IKResponse> responses;
-  EXPECT_EQ(kSuccess, solver->Solve(req, responses));
-  EXPECT_EQ(1, responses.size());
-  EXPECT_LT(CalcPoseDiff(responses[0].origin_to_end, origin_to_hand), kEpsilon);
 }
 
 // Solution using floating movement is obtained
@@ -423,23 +438,20 @@ TEST_F(NumericIKTest, FloatBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kFloat);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
 }
 
 // Solution using horizontal X is obtained
@@ -455,26 +467,23 @@ TEST_F(NumericIKTest, RailXBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRailX);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
@@ -493,26 +502,23 @@ TEST_F(NumericIKTest, RailYBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRailY);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
@@ -531,26 +537,23 @@ TEST_F(NumericIKTest, RailZBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRailZ);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
   EXPECT_NEAR(0.0, rotation.angle(), kEpsilon);
@@ -569,26 +572,23 @@ TEST_F(NumericIKTest, RotationXBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRotationX);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
@@ -609,26 +609,23 @@ TEST_F(NumericIKTest, RotationYBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRotationY);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
@@ -649,26 +646,23 @@ TEST_F(NumericIKTest, RotationZBaseCase) {
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
 
   IKRequest req(tmc_manipulation_types::kRotationZ);
-  req.frame_name = "link7";
-  req.frame_to_end = unit;
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = unit;
+  req.target_frames[0].ref_origin_to_end = origin_to_hand;
   req.origin_to_base = unit;
-  req.ref_origin_to_end = origin_to_hand;
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d origin_to_hand_result;
-  Eigen::Affine3d origin_to_base;
-  ASSERT_EQ(kSuccess, solver->Solve(
-      req,
-      solution,
-      origin_to_base,
-      origin_to_hand_result));
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
   // End-effector position is correct
-  EXPECT_LT(CalcPoseDiff(origin_to_hand, origin_to_hand_result), kEpsilon);
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(origin_to_hand, responses[0].origin_to_ends[0]), kEpsilon);
   // Constraints are correct
-  Eigen::Translation3d trans(origin_to_base.translation());
-  Eigen::AngleAxisd rotation(origin_to_base.rotation());
+  Eigen::Translation3d trans(responses[0].origin_to_base.translation());
+  Eigen::AngleAxisd rotation(responses[0].origin_to_base.rotation());
   EXPECT_NEAR(0.0, trans.x(), kEpsilon);
   EXPECT_NEAR(0.0, trans.y(), kEpsilon);
   EXPECT_NEAR(0.0, trans.z(), kEpsilon);
@@ -683,20 +677,22 @@ TEST_F(NumericIKTest, Plugin) {
   auto solver = loader.createSharedInstance("tmc_robot_kinematics_model/NumericIKSolver");
   solver->set_robot_description(tmc_manipulation_tests::stanford_manipulator::GetUrdf());
 
-  // Numbers are the same as SimpleCase
+  // Numerical values are the same as SimpleCase
   IKRequest req;
-  req.frame_name = "link7";
-  req.frame_to_end = Eigen::Affine3d::Identity();
-  req.origin_to_base = Eigen::Affine3d::Identity();
-  req.ref_origin_to_end = Eigen::Translation3d(-0.2, -0.2, 1.0)
+  req.target_frames.resize(1);
+  req.target_frames[0].frame_name = "link7";
+  req.target_frames[0].frame_to_end = Eigen::Affine3d::Identity();
+  req.target_frames[0].ref_origin_to_end = Eigen::Translation3d(-0.2, -0.2, 1.0)
       * Eigen::Quaterniond(0.7214, -0.69634, -0.0874548, 0.0176877);
+  req.origin_to_base = Eigen::Affine3d::Identity();
   req.initial_angle = initial_angle_;
   req.use_joints = use_name_;
 
-  JointState solution;
-  Eigen::Affine3d hand_result;
-  ASSERT_EQ(kSuccess, solver->Solve(req, solution, hand_result));
-  EXPECT_LT(CalcPoseDiff(hand_result, req.ref_origin_to_end), kEpsilon);
+  std::vector<IKResponse> responses;
+  ASSERT_EQ(kSuccess, solver->Solve(req, responses));
+  EXPECT_EQ(1, responses.size());
+  EXPECT_EQ(1, responses[0].origin_to_ends.size());
+  EXPECT_LT(CalcPoseDiff(req.target_frames[0].ref_origin_to_end, responses[0].origin_to_ends[0]), kEpsilon);
 }
 
 int main(int argc, char *argv[]) {

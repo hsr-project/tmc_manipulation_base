@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -43,7 +43,7 @@ using tmc_manipulation_types::NameSeq;
 constexpr int EVAL_COUNT = 100000;
 
 std::string load_hsrb_urdf() {
-  // This is a script for operation check, so it's a quick job
+  // This is a quick script for operation check
   std::ifstream xml_file("/opt/ros/noetic/share/hsrb_description/robots/hsrb.urdf");
   std::string xml_string;
   while (xml_file.good()) {

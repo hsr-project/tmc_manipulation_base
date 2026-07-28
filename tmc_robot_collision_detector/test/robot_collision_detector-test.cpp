@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     robot_collision_detector-test.cpp
-/// @brief    Test of a class that performs interference checks using a robot model
+/// @brief    Test class for performing interference checks using a robot model
 #include <fstream>
 #include <string>
 #include <vector>
@@ -182,29 +182,29 @@ void RobotCollisionDetectorTest::SetUp() {
 }
 
 TEST_P(RobotCollisionDetectorTest, Constructor) {
-  // Normal case: Load a regular file (ODE)
+  // Normal case: Load a valid file (ODE)
   EXPECT_NO_THROW(
       RobotCollisionDetector(robot_description_,
                              collision_pair_list_, GetParam()));
 
-  // Abnormal case: Robot model file does not exist
+  // Error case: Robot model file does not exist
   EXPECT_ANY_THROW(
       RobotCollisionDetector(kNonExistFile,
                              collision_pair_list_, GetParam()));
 
-  // Abnormal case: Syntax of the robot model file is incorrect
+  // Error case: Syntax of the robot model file is incorrect
   EXPECT_ANY_THROW(
       RobotCollisionDetector(kIncorrectRobotModel,
                              collision_pair_list_, GetParam()));
 
-  // Abnormal case: Specify a non-existent physics engine
+  // Error case: Specify a non-existent physics engine
   EXPECT_ANY_THROW(
       RobotCollisionDetector(robot_description_,
                              collision_pair_list_, kNonExistFile));
 }
 
 TEST_P(RobotCollisionDetectorTest, ConstructorWithKinematicsModel) {
-  // Since the kinematic model inserted from outside is used, the robot_model should change similarly with the position/orientation set to the detector
+  // Since the kinematic model injected externally is used, the robot_model should change accordingly when setting position/orientation to the detector
   auto robot_model = std::make_shared<tmc_robot_kinematics_model::PinocchioWrapper>(robot_description_);
   auto detector_with_model = std::make_shared<RobotCollisionDetector>(
       robot_model, robot_description_, collision_pair_list_, GetParam());
@@ -213,7 +213,7 @@ TEST_P(RobotCollisionDetectorTest, ConstructorWithKinematicsModel) {
   const auto pose_from_detector = detector_with_model->GetObjectTransform(kJoint);
   const auto pose_from_kinematics = robot_model->GetObjectTransform(kJoint);
 
-  // Since a translational movement of the cart was commanded, checking only the position is sufficient
+  // Since translational movement of the cart was commanded, checking only the position is sufficient
   EXPECT_DOUBLE_EQ(pose_from_detector.translation().x(), pose_from_kinematics.translation().x());
   EXPECT_DOUBLE_EQ(pose_from_detector.translation().y(), pose_from_kinematics.translation().y());
   EXPECT_DOUBLE_EQ(pose_from_detector.translation().z(), pose_from_kinematics.translation().z());
@@ -225,18 +225,18 @@ TEST_P(RobotCollisionDetectorTest, CreateOuterObject) {
   EXPECT_NO_THROW(detector_->CreateOuterObject(wall_));
   EXPECT_EQ(2, detector_->GetAllOuterObjectParameters().size());
 
-  // Abnormal case: The number of shapes and poses of the child object do not match
+  // Error case: Mismatch between the number of shapes and poses of child objects
   detector_ = std::make_shared<RobotCollisionDetector>(robot_description_, collision_pair_list_, GetParam());
   OuterObjectParameters incorrect_parameters = boxes_;
   incorrect_parameters.base_to_child.resize(2);
   EXPECT_ANY_THROW(detector_->CreateOuterObject(incorrect_parameters));
 
-  // Abnormal case: No name
+  // Error case: No name
   incorrect_parameters = boxes_;
   incorrect_parameters.name.clear();
   EXPECT_ANY_THROW(detector_->CreateOuterObject(incorrect_parameters));
 
-  // Abnormal case: Trying to use an already existing name
+  // Error case: Attempting to use an already existing name
   EXPECT_NO_THROW(detector_->CreateOuterObject(boxes_));
   EXPECT_ANY_THROW(detector_->CreateOuterObject(boxes_));
 }
@@ -256,68 +256,68 @@ TEST_P(RobotCollisionDetectorTest, CreateCuboids) {
   EXPECT_NO_THROW(detector_->CreateCuboids(bounding_boxes_, false, "BODY"));
   EXPECT_EQ(3, detector_->GetAllOuterObjectParameters().size());
 
-  // Abnormal case: Create the same Cuboid
+  // Error case: Create the same Cuboid
   detector_ = std::make_shared<RobotCollisionDetector>(robot_description_, collision_pair_list_, GetParam());
   EXPECT_NO_THROW(detector_->CreateCuboids(bounding_boxes_, false));
   EXPECT_ANY_THROW(detector_->CreateCuboids(bounding_boxes_, false));
 
-  // Abnormal case: Create a Cuboid with an empty name
+  // Error case: Create a Cuboid with an empty name
   CuboidSeq no_name_box_;
   no_name_box_.resize(1, bounding_boxes_[0]);
   no_name_box_[0].box_name.clear();
   EXPECT_ANY_THROW(detector_->CreateCuboids(no_name_box_, false));
 
-  // Abnormal case: Create a Cuboid by specifying a non-existent group
+  // Error case: Create a Cuboid by specifying a non-existent group
   detector_ = std::make_shared<RobotCollisionDetector>(robot_description_, collision_pair_list_, GetParam());
   EXPECT_ANY_THROW(detector_->CreateCuboids(bounding_boxes_, false, "hoge"));
 }
 
 TEST_P(RobotCollisionDetectorTest, DestroyOuterObject) {
-  // Normal case: Discard an existing external object
+  // Normal case: Destroy an existing external object
   detector_->CreateOuterObject(wall_);
   EXPECT_NO_THROW(detector_->DestroyOuterObject(kWall));
   EXPECT_EQ(0, detector_->GetAllOuterObjectParameters().size());
 
-  // Normal case: Discard a robot part (do not discard)
+  // Normal case: Destroy a robot part (do not destroy)
   detector_->CreateOuterObject(wall_);
   EXPECT_NO_THROW(detector_->DestroyOuterObject(wrist_shape_));
   EXPECT_EQ(1, detector_->GetAllOuterObjectParameters().size());
 
-  // Normal case: Discard a grasped object (do not discard)
+  // Normal case: Destroy a grasped object (do not destroy)
   detector_->CreateOuterObject(boxes_);
   detector_->HoldObject(kBoxes, wrist_shape_,
                         Eigen::Affine3d::Identity(), kWristGroup);
   EXPECT_NO_THROW(detector_->DestroyOuterObject(kBoxes));
   EXPECT_EQ(2, detector_->GetAllOuterObjectParameters().size());
 
-  // Normal case: Discard all external objects
+  // Normal case: Destroy all external objects
   EXPECT_NO_THROW(detector_->DestroyAllOuterObject());
   EXPECT_EQ(0, detector_->GetAllOuterObjectParameters().size());
 
-  // Normal case: Discard all external objects without creating any external objects
+  // Normal case: Destroy all external objects without creating any external objects
   EXPECT_NO_THROW(detector_->DestroyAllOuterObject());
 
-  // Normal case: Discard a Cuboid
+  // Normal case: Destroy a Cuboid
   detector_->CreateCuboids(bounding_boxes_, false);
   EXPECT_NO_THROW(detector_->DestroyOuterObject(bounding_boxes_[0].box_name));
   EXPECT_EQ(2, detector_->GetAllOuterObjectParameters().size());
 
-  // Abnormal case: Discard a non-existent external object
+  // Error case: Destroy a non-existent external object
   EXPECT_ANY_THROW(detector_->DestroyOuterObject("hoge"));
 
-  // Abnormal case: Discard an object that has already been discarded
+  // Error case: Destroy an object that has already been destroyed
   detector_->CreateOuterObject(boxes_);
   EXPECT_NO_THROW(detector_->DestroyOuterObject(kBoxes));
   EXPECT_ANY_THROW(detector_->DestroyOuterObject(kBoxes));
 
-  // Abnormal case: Discard a child object
+  // Error case: Destroy a child object
   detector_->CreateOuterObject(boxes_);
   EXPECT_ANY_THROW(
       detector_->DestroyOuterObject(std::string(kBoxes) + std::string("#1")));
 }
 
 TEST_P(RobotCollisionDetectorTest, DestroyCuboids) {
-  // Normal case: Discard a Cuboid
+  // Normal case: Destroy a Cuboid
   detector_->CreateOuterObject(wall_);
   detector_->CreateCuboids(bounding_boxes_, false);
   EXPECT_NO_THROW(detector_->DestroyCuboids());
@@ -344,7 +344,7 @@ TEST_P(RobotCollisionDetectorTest, GetObjectParameter) {
   param = detector_->GetObjectParameter(std::string(kCuboid) + "1");
   EXPECT_EQ(std::string(kCuboid) + "1", param.name);
 
-  // Abnormal case: Retrieve parameters of a non-existent object
+  // Error case: Retrieve parameters of a non-existent object
   EXPECT_ANY_THROW(detector_->GetObjectParameter("hoge"));
 }
 
@@ -363,25 +363,25 @@ TEST_P(RobotCollisionDetectorTest, GetAllOuterObjectParameter) {
 }
 
 TEST_P(RobotCollisionDetectorTest, EnableDisableObject) {
-  // Normal case: Check the operation of EnableObject for an external object
+  // Normal case: Check the operation of EnableObject for external objects
   detector_->CreateOuterObject(wall_);
   EXPECT_NO_THROW(detector_->EnableCollisionObject(kWall));
 
-  // Normal case: Check the operation of DisableObject for an external object
+  // Normal case: Check the operation of DisableObject for external objects
   EXPECT_NO_THROW(detector_->DisableCollisionObject(kWall));
 
-  // Normal case: Check the operation of EnableObject for a robot part
+  // Normal case: Check the operation of EnableObject for robot parts
   EXPECT_NO_THROW(detector_->EnableCollisionObject(wrist_shape_));
 
-  // Normal case: Check the operation of DisableObject for a robot part
+  // Normal case: Check the operation of DisableObject for robot parts
   EXPECT_NO_THROW(detector_->DisableCollisionObject(wrist_shape_));
 
-  // Normal case: Check the operation of EnableObject for a child object
+  // Normal case: Check the operation of EnableObject for child objects
   detector_->CreateOuterObject(boxes_);
   std::string child_object_name(std::string(kBoxes) + std::string("#1"));
   EXPECT_NO_THROW(detector_->EnableCollisionObject(child_object_name));
 
-  // Normal case: Check the operation of DisableObject for a child object
+  // Normal case: Check the operation of DisableObject for child objects
   EXPECT_NO_THROW(detector_->DisableCollisionObject(child_object_name));
 
   // Normal case: Check the operation of EnableObject for a Cuboid
@@ -399,56 +399,56 @@ TEST_P(RobotCollisionDetectorTest, EnableDisableObject) {
   EXPECT_NE(detector_->GetObjectGroup(cuboid1_name),
             detector_->GetObjectGroup(cuboid0_name));
 
-  // Abnormal case: Check the operation of EnableObject for a non-existent object
+  // Error case: Check the operation of EnableObject for a non-existent object
   EXPECT_ANY_THROW(detector_->EnableCollisionObject("hoge"));
 
-  // Abnormal case: Check the operation of DisableObject for a non-existent object
+  // Error case: Check the operation of DisableObject for a non-existent object
   EXPECT_ANY_THROW(detector_->DisableCollisionObject("hoge"));
 }
 
 TEST_P(RobotCollisionDetectorTest, OperateGroupProperty) {
-  // Normal case: Check the operation of GetObjectGroup for an external object
+  // Normal case: Check the operation of GetObjectGroup for external objects
   detector_->CreateOuterObject(wall_);
   EXPECT_EQ(detector_->GetObjectDefaultGroup(kWall),
             detector_->GetObjectGroup(kWall));
 
-  // Normal case: Check the operation of SetObjectGroup for an external object
+  // Normal case: Check the operation of SetObjectGroup for external objects
   EXPECT_NO_THROW(detector_->SetObjectGroup(kWall, 4));
   EXPECT_EQ(4, detector_->GetObjectGroup(kWall));
 
-  // Normal case: Check the operation of SetObjectDefaultGroup for an external object
+  // Normal case: Check the operation of SetObjectDefaultGroup for external objects
   EXPECT_NO_THROW(detector_->SetObjectDefaultGroup(kWall));
   EXPECT_EQ(detector_->GetObjectDefaultGroup(kWall),
             detector_->GetObjectGroup(kWall));
 
-  // Normal case: Check the operation of GetObjectGroup for a robot part
+  // Normal case: Check the operation of GetObjectGroup for robot parts
   EXPECT_EQ(detector_->GetObjectDefaultGroup(wrist_shape_),
             detector_->GetObjectGroup(wrist_shape_));
 
-  // Normal case: Check the operation of SetObjectGroup for a robot part
+  // Normal case: Check the operation of SetObjectGroup for robot parts
   EXPECT_NO_THROW(detector_->SetObjectGroup(wrist_shape_, 4));
   EXPECT_EQ(4, detector_->GetObjectGroup(wrist_shape_));
 
-  // Normal case: Check the operation of SetObjectDefaultGroup for a robot part
+  // Normal case: Check the operation of SetObjectDefaultGroup for robot parts
   EXPECT_NO_THROW(detector_->SetObjectDefaultGroup(wrist_shape_));
   EXPECT_EQ(detector_->GetObjectDefaultGroup(wrist_shape_),
             detector_->GetObjectGroup(wrist_shape_));
 
-  // Normal case: Check the operation of GetObjectGroup for a child object
+  // Normal case: Check the operation of GetObjectGroup for child objects
   detector_->CreateOuterObject(boxes_);
   std::string child_object_name(std::string(kBoxes) + std::string("#1"));
   EXPECT_EQ(detector_->GetObjectGroup(kBoxes),
             detector_->GetObjectGroup(child_object_name));
 
-  // Normal case: Check the operation of GetObjectDefaultGroup for a child object
+  // Normal case: Check the operation of GetObjectDefaultGroup for child objects
   EXPECT_EQ(detector_->GetObjectDefaultGroup(kBoxes),
             detector_->GetObjectDefaultGroup(child_object_name));
 
-  // Normal case: Check the operation of SetObjectGroup for a child object
+  // Normal case: Check the operation of SetObjectGroup for child objects
   EXPECT_NO_THROW(detector_->SetObjectGroup(child_object_name, 4));
   EXPECT_EQ(4, detector_->GetObjectGroup(child_object_name));
 
-  // Normal case: Check the operation of SetObjectDefaultGroup for a child object
+  // Normal case: Check the operation of SetObjectDefaultGroup for child objects
   EXPECT_NO_THROW(detector_->SetObjectDefaultGroup(child_object_name));
   EXPECT_EQ(detector_->GetObjectDefaultGroup(kBoxes),
             detector_->GetObjectGroup(child_object_name));
@@ -469,59 +469,59 @@ TEST_P(RobotCollisionDetectorTest, OperateGroupProperty) {
   EXPECT_EQ(detector_->GetObjectDefaultGroup(cuboid_name),
             detector_->GetObjectGroup(cuboid_name));
 
-  // Abnormal case: Check the operation of GetObjectGroup for a non-existent object
+  // Error case: Check the operation of GetObjectGroup for a non-existent object
   EXPECT_ANY_THROW(detector_->GetObjectGroup("hoge"));
 
-  // Abnormal case: Check the operation of SetObjectGroup for a non-existent object
+  // Error case: Check the operation of SetObjectGroup for a non-existent object
   EXPECT_ANY_THROW(detector_->SetObjectGroup("hoge", 4));
 
-  // Abnormal case: Check the operation of SetObjectDefaultGroup for a non-existent object
+  // Error case: Check the operation of SetObjectDefaultGroup for a non-existent object
   EXPECT_ANY_THROW(detector_->SetObjectDefaultGroup("hoge"));
 }
 
 TEST_P(RobotCollisionDetectorTest, OperateFilterProperty) {
-  // Normal case: Check the operation of GetObjectFilter for an external object
+  // Normal case: Check the operation of GetObjectFilter for external objects
   detector_->CreateOuterObject(wall_);
   EXPECT_EQ(detector_->GetObjectDefaultFilter(kWall),
             detector_->GetObjectFilter(kWall));
 
-  // Normal case: Check the operation of SetObjectFilter for an external object
+  // Normal case: Check the operation of SetObjectFilter for external objects
   EXPECT_NO_THROW(detector_->SetObjectFilter(kWall, 4));
   EXPECT_EQ(4, detector_->GetObjectFilter(kWall));
 
-  // Normal case: Check the operation of SetObjectDefaultFilter for an external object
+  // Normal case: Check the operation of SetObjectDefaultFilter for external objects
   EXPECT_NO_THROW(detector_->SetObjectDefaultFilter(kWall));
   EXPECT_EQ(detector_->GetObjectDefaultFilter(kWall),
             detector_->GetObjectFilter(kWall));
 
-  // Normal case: Check the operation of GetObjectFilter for a robot part
+  // Normal case: Check the operation of GetObjectFilter for robot parts
   EXPECT_EQ(detector_->GetObjectDefaultFilter(wrist_shape_),
             detector_->GetObjectFilter(wrist_shape_));
 
-  // Normal case: Check the operation of SetObjectFilter for a robot part
+  // Normal case: Check the operation of SetObjectFilter for robot parts
   EXPECT_NO_THROW(detector_->SetObjectFilter(wrist_shape_, 4));
   EXPECT_EQ(4, detector_->GetObjectFilter(wrist_shape_));
 
-  // Normal case: Check the operation of SetObjectDefaultFilter for a robot part
+  // Normal case: Check the operation of SetObjectDefaultFilter for robot parts
   EXPECT_NO_THROW(detector_->SetObjectDefaultFilter(wrist_shape_));
   EXPECT_EQ(detector_->GetObjectDefaultFilter(wrist_shape_),
             detector_->GetObjectFilter(wrist_shape_));
 
-  // Normal case: Check the operation of GetObjectFilter for a child object
+  // Normal case: Check the operation of GetObjectFilter for child objects
   detector_->CreateOuterObject(boxes_);
   std::string child_object_name(std::string(kBoxes) + std::string("#1"));
   EXPECT_EQ(detector_->GetObjectFilter(kBoxes),
             detector_->GetObjectFilter(child_object_name));
 
-  // Normal case: Check the operation of GetObjectDefaultFilter for a child object
+  // Normal case: Check the operation of GetObjectDefaultFilter for child objects
   EXPECT_EQ(detector_->GetObjectDefaultFilter(kBoxes),
             detector_->GetObjectDefaultFilter(child_object_name));
 
-  // Normal case: Check the operation of SetObjectFilter for a child object
+  // Normal case: Check the operation of SetObjectFilter for child objects
   EXPECT_NO_THROW(detector_->SetObjectFilter(child_object_name, 4));
   EXPECT_EQ(4, detector_->GetObjectFilter(child_object_name));
 
-  // Normal case: Check the operation of SetObjectDefaultFilter for a child object
+  // Normal case: Check the operation of SetObjectDefaultFilter for child objects
   EXPECT_NO_THROW(detector_->SetObjectDefaultFilter(child_object_name));
   EXPECT_EQ(detector_->GetObjectDefaultFilter(kBoxes),
             detector_->GetObjectFilter(child_object_name));
@@ -542,18 +542,18 @@ TEST_P(RobotCollisionDetectorTest, OperateFilterProperty) {
   EXPECT_EQ(detector_->GetObjectDefaultFilter(cuboid_name),
             detector_->GetObjectFilter(cuboid_name));
 
-  // Abnormal case: Check the operation of GetObjectFilter for a non-existent object
+  // Error case: Check the operation of GetObjectFilter for a non-existent object
   EXPECT_ANY_THROW(detector_->GetObjectFilter("hoge"));
 
-  // Abnormal case: Check the operation of SetObjectFilter for a non-existent object
+  // Error case: Check the operation of SetObjectFilter for a non-existent object
   EXPECT_ANY_THROW(detector_->SetObjectFilter("hoge", 4));
 
-  // Abnormal case: Check the operation of SetObjectDefaultFilter for a non-existent object
+  // Error case: Check the operation of SetObjectDefaultFilter for a non-existent object
   EXPECT_ANY_THROW(detector_->SetObjectDefaultFilter("hoge"));
 }
 
 TEST_P(RobotCollisionDetectorTest, DisableCollisionPairProperty) {
-  // Arrange objects so that child objects collide with robot parts
+  // Place objects so that child objects collide with robot parts
   OuterObjectParameters boxes;
   boxes = boxes_;
   boxes.origin_to_base = detector_->GetObjectTransform("BASE/FRAME_BASE");
@@ -573,7 +573,7 @@ TEST_P(RobotCollisionDetectorTest, DisableCollisionPairProperty) {
   detector_->SetRobotNamedAngle(named_angle);
   detector_->DisableCollisionObject(linear_shape_);
 
-  // Exclude from interference check and perform interference check,
+  // Exclude from interference check, perform interference check,
   // Then enable interference check and perform interference check again
   // Normal case: Exclude from interference check (robot part/parent object)
   detector_->DisableCollisionCheckObjectToObject(base_shape_2_, kBoxes);
@@ -639,25 +639,25 @@ TEST_P(RobotCollisionDetectorTest, DisableCollisionPairProperty) {
   detector_->CheckCollision(false, contact_list);
   EXPECT_EQ(6, contact_list.size());
 
-  // Abnormal case: Specify a non-existent object name (object object)
+  // Error case: Specify a non-existent object name (object object)
   EXPECT_ANY_THROW(detector_->DisableCollisionCheckObjectToObject(
       base_shape_2_, "hoge"));
 
-  // Abnormal case: Specify a non-existent object name (object group)
+  // Error case: Specify a non-existent object name (object group)
   EXPECT_ANY_THROW(detector_->DisableCollisionCheckObjectToGroup(
       "hoge", "BODY"));
 
-  // Abnormal case: Specify a non-existent group name (object group)
+  // Error case: Specify a non-existent group name (object group)
   EXPECT_ANY_THROW(detector_->DisableCollisionCheckObjectToGroup(
       base_shape_2_, "hoge"));
 
-  // Abnormal case: Specify a non-existent group name (group group)
+  // Error case: Specify a non-existent group name (group group)
   EXPECT_ANY_THROW(detector_->DisableCollisionCheckGroupToGroup(
       "BODY", "hoge"));
 }
 
 TEST_P(RobotCollisionDetectorTest, EnableCollisionPairProperty) {
-  // Arrange objects so that child objects collide with robot parts
+  // Place objects so that child objects collide with robot parts
   OuterObjectParameters boxes;
   boxes = boxes_;
   boxes.origin_to_base = detector_->GetObjectTransform("BASE/FRAME_BASE");
@@ -677,7 +677,7 @@ TEST_P(RobotCollisionDetectorTest, EnableCollisionPairProperty) {
   detector_->SetRobotNamedAngle(named_angle);
   detector_->DisableCollisionObject(linear_shape_);
 
-  // Add to interference check and perform interference check,
+  // Add to interference check, perform interference check,
   // Then disable interference check and perform interference check again
   // Normal case: After grasping, add to interference check (robot part/parent object)
   detector_->HoldObject(kBoxes, "BASE/FRAME_BASE",
@@ -744,19 +744,19 @@ TEST_P(RobotCollisionDetectorTest, EnableCollisionPairProperty) {
   detector_->CheckCollision(false, contact_list);
   EXPECT_EQ(6, contact_list.size());
 
-  // Abnormal case: Specify a non-existent object name (object object)
+  // Error case: Specify a non-existent object name (object object)
   EXPECT_ANY_THROW(detector_->EnableCollisionCheckObjectToObject(
       base_shape_2_, "hoge"));
 
-  // Abnormal case: Specify a non-existent object name (object group)
+  // Error case: Specify a non-existent object name (object group)
   EXPECT_ANY_THROW(detector_->EnableCollisionCheckObjectToGroup(
       "hoge", "BODY"));
 
-  // Abnormal case: Specify a non-existent group name (object group)
+  // Error case: Specify a non-existent group name (object group)
   EXPECT_ANY_THROW(detector_->EnableCollisionCheckObjectToGroup(
       base_shape_2_, "hoge"));
 
-  // Abnormal case: Specify a non-existent group name (group group)
+  // Error case: Specify a non-existent group name (group group)
   EXPECT_ANY_THROW(detector_->EnableCollisionCheckGroupToGroup(
       "BODY", "hoge"));
 }
@@ -781,7 +781,7 @@ TEST_P(RobotCollisionDetectorTest, GetObjectTransform) {
   detector_->CreateCuboids(bounding_boxes_, false);
   EXPECT_NO_THROW(detector_->GetObjectTransform(std::string(kCuboid) + "0"));
 
-  // Abnormal case: Retrieve the pose of a non-existent object
+  // Error case: Retrieve the pose of a non-existent object
   EXPECT_ANY_THROW(detector_->GetObjectTransform("hoge"));
 }
 
@@ -808,7 +808,7 @@ TEST_P(RobotCollisionDetectorTest, SetObjectTransform) {
       detector_->SetObjectTransform(cuboid_name, Eigen::Affine3d::Identity()));
   EXPECT_FALSE(detector_->GetObjectParameter(cuboid_name).cuboid);
 
-  // Abnormal case: Set the pose of a non-existent object
+  // Error case: Set the pose of a non-existent object
   EXPECT_ANY_THROW(
       detector_->SetObjectTransform("hoge", Eigen::Affine3d::Identity()));
 }
@@ -837,7 +837,7 @@ TEST_P(RobotCollisionDetectorTest, HoldObject) {
       detector_->GetObjectTransform(wrist_shape_).translation();
   EXPECT_TRUE(diff.isZero());
 
-  // Normal case: Grasp an object that is already grasped (cannot grasp)
+  // Normal case: Grasp an already grasped object (cannot grasp)
   EXPECT_NO_THROW(detector_->HoldObject(kBoxes, wrist_shape_,
                                         Eigen::Affine3d::Identity(),
                                         kWristGroup));
@@ -853,26 +853,26 @@ TEST_P(RobotCollisionDetectorTest, HoldObject) {
                                         Eigen::Affine3d::Identity(),
                                         kWristGroup));
 
-  // Normal case: Grasp by subtracting the group from frame_name
+  // Normal case: Grasp based on frame_name
   detector_->ReleaseObject(kBoxes);
   EXPECT_NE(detector_->GetObjectFilter(wrist_shape_), detector_->GetObjectFilter(kBoxes));
   EXPECT_NO_THROW(detector_->HoldObject(kBoxes, "CARM/HAND/_root_", Eigen::Affine3d::Identity()));
   const auto config = std::make_shared<CollisionDetectorConfig>(collision_pair_list_);
   EXPECT_EQ(config->GetFilterBitByGroupName("HAND_GRASPED"), detector_->GetObjectFilter(kBoxes));
 
-  // Abnormal case: Grasp a non-existent object
+  // Error case: Grasp a non-existent object
   detector_ = std::make_shared<RobotCollisionDetector>(robot_description_, collision_pair_list_, GetParam());
   detector_->CreateOuterObject(boxes_);
   EXPECT_ANY_THROW(detector_->HoldObject("hoge", wrist_shape_,
                                          Eigen::Affine3d::Identity(),
                                          kWristGroup));
 
-  // Abnormal case: Grasp with a non-existent frame
+  // Error case: Grasp with a non-existent frame
   EXPECT_ANY_THROW(detector_->HoldObject(kBoxes, "hoge",
                                          Eigen::Affine3d::Identity(),
                                          kWristGroup));
 
-  // Abnormal case: Grasp with a non-existent group
+  // Error case: Grasp with a non-existent group
   EXPECT_ANY_THROW(detector_->HoldObject(kBoxes, wrist_shape_,
                                          Eigen::Affine3d::Identity(),
                                          "hoge"));
@@ -916,16 +916,16 @@ TEST_P(RobotCollisionDetectorTest, ReleaseObject) {
   EXPECT_NE(detector_->GetObjectGroup(std::string(kCuboid) + "0"),
             detector_->GetObjectGroup(std::string(kCuboid) + "1"));
 
-  // Abnormal case: Release a non-existent object
+  // Error case: Release a non-existent object
   EXPECT_ANY_THROW(detector_->ReleaseObject("hoge"));
 
-  // Abnormal case: Release an object that is not grasped
+  // Error case: Release an object that is not grasped
   detector_->CreateOuterObject(boxes_);
   EXPECT_ANY_THROW(detector_->ReleaseObject(kBoxes));
 }
 
 TEST_P(RobotCollisionDetectorTest, CollisionCheck) {
-  // Arrange objects so that child objects collide with the robot
+  // Place objects so that child objects collide with the robot
   OuterObjectParameters boxes;
   boxes = boxes_;
   boxes.origin_to_base = detector_->GetObjectTransform("BASE/FRAME_BASE");
@@ -942,39 +942,39 @@ TEST_P(RobotCollisionDetectorTest, CollisionCheck) {
   named_angle.position(elbow_p_index) = 0.0;
   detector_->SetRobotNamedAngle(named_angle);
 
-  // Normal case: Interfere
+  // Normal case: Interference occurs
   EXPECT_TRUE(detector_->CheckCollision());
 
-  // Normal case: Disable interference check → Do not interfere
+  // Normal case: Disable interference check → No interference
   detector_->DisableCollisionObject(kBoxes);
   EXPECT_FALSE(detector_->CheckCollision());
 
-  // Normal case: Enable after disabling → Interfere
+  // Normal case: Enable after disabling → Interference occurs
   detector_->EnableCollisionObject(kBoxes);
   EXPECT_TRUE(detector_->CheckCollision());
 
-  // Normal case: Grasp → Do not interfere
+  // Normal case: Grasp → No interference
   detector_->HoldObject(kBoxes, "BASE/FRAME_BASE",
                         Eigen::Affine3d::Identity(), "BODY");
   EXPECT_FALSE(detector_->CheckCollision());
 
-  // Normal case: Release after grasping → Interfere
+  // Normal case: Release after grasping → Interference occurs
   detector_->ReleaseObject(kBoxes);
   EXPECT_TRUE(detector_->CheckCollision());
 
-  // Normal case: Change filter setting to not interfere with BODY → Do not interfere
+  // Normal case: Change filter settings to avoid interference with BODY → No interference
   detector_->SetObjectGroup(
       kBoxes, detector_->GetObjectGroup(base_shape_1_));
   detector_->SetObjectFilter(
       kBoxes, detector_->GetObjectFilter(base_shape_1_));
   EXPECT_FALSE(detector_->CheckCollision());
 
-  // Normal case: Revert group → Interfere
+  // Normal case: Revert group settings → Interference occurs
   detector_->SetObjectDefaultGroup(kBoxes);
   detector_->SetObjectDefaultFilter(kBoxes);
   EXPECT_TRUE(detector_->CheckCollision());
 
-  // Normal case: Retrieve interfering object pair name
+  // Normal case: Retrieve names of interfering object pairs
   std::vector<PairString> contact_list;
   EXPECT_TRUE(detector_->CheckCollision(false, contact_list));
   ASSERT_FALSE(contact_list.empty());
@@ -988,7 +988,7 @@ TEST_P(RobotCollisionDetectorTest, CollisionCheck) {
   EXPECT_TRUE(detector_->CheckCollision(true, contact_list));
   EXPECT_FALSE(contact_list.empty());
 
-  // Normal case: Confirm if the default interference check exclusion list is effective
+  // Normal case: Confirm that the default interference check exclusion list is effective
   detector_->HoldObject(kBoxes, "BASE/FRAME_BASE",
                         Eigen::Affine3d::Identity(), "BODY");
   uint32_t wrist_p_index =
@@ -1030,7 +1030,7 @@ TEST_P(RobotCollisionDetectorTest, GetAABB) {
   EXPECT_NEAR(0.0, default_aabb(2, 0), kEpsilon);
   EXPECT_NEAR(1.0, default_aabb(2, 1), kEpsilon);
 
-  // Abnormal case: Retrieve the AABB of a non-existent object
+  // Error case: Retrieve the AABB of a non-existent object
   EXPECT_ANY_THROW(detector_->GetObjectAABB("hoge"));
 }
 
@@ -1050,22 +1050,22 @@ TEST_P(RobotCollisionDetectorTest, RefleshOverlappedCuboids) {
   named_angle.position(shoulder_p_index) = 1.57;
   detector_->SetRobotNamedAngle(named_angle);
 
-  // Normal case: Regular operation (aabb, group)
+  // Normal case: Valid operation (aabb, group)
   EXPECT_NO_THROW(
       detector_->RefleshOverlappedCuboids(kOverlapAabb, kOverlapGroup));
   EXPECT_EQ(1, detector_->GetEnableCuboidsNum());
 
-  // Normal case: Regular operation (2dmap, group)
+  // Normal case: Valid operation (2dmap, group)
   EXPECT_NO_THROW(
       detector_->RefleshOverlappedCuboids(kOverlap2DMap, kOverlapGroup));
   EXPECT_EQ(3, detector_->GetEnableCuboidsNum());
 
-  // Normal case: Regular operation (aabb, robot)
+  // Normal case: Valid operation (aabb, robot)
   EXPECT_NO_THROW(
       detector_->RefleshOverlappedCuboids(kOverlapAabb, kOverlapRobot));
   EXPECT_EQ(3, detector_->GetEnableCuboidsNum());
 
-  // Normal case: Regular operation (2dmap, robot)
+  // Normal case: Valid operation (2dmap, robot)
   EXPECT_NO_THROW(
       detector_->RefleshOverlappedCuboids(kOverlap2DMap, kOverlapRobot));
   EXPECT_EQ(3, detector_->GetEnableCuboidsNum());
@@ -1097,21 +1097,21 @@ TEST_P(RobotCollisionDetectorTest, EnableDisableCuboids) {
   EXPECT_EQ(0, detector_->GetEnableCuboidsNum());
   EXPECT_FALSE(detector_->CheckCollision());
 
-  // Normal case: CUBOID is zero, but enable by specifying an existing group
+  // Normal case: Enable by specifying an existing group, even though CUBOID is 0
   EXPECT_NO_THROW(detector_->EnableCuboids("BODY"));
   EXPECT_EQ(0, detector_->GetEnableCuboidsNum());
   EXPECT_FALSE(detector_->CheckCollision());
 
-  // Normal case: CUBOID is zero, but disable by specifying an existing group
+  // Normal case: Disable by specifying an existing group, even though CUBOID is 0
   EXPECT_NO_THROW(detector_->EnableCuboids("CUBOID"));
   EXPECT_NO_THROW(detector_->DisableCuboids("BODY"));
   EXPECT_EQ(3, detector_->GetEnableCuboidsNum());
   EXPECT_TRUE(detector_->CheckCollision());
 
-  // Abnormal case: Enable a non-existent group
+  // Error case: Enable a non-existent group
   EXPECT_ANY_THROW(detector_->EnableCuboids("hoge"));
 
-  // Abnormal case: Enable a non-existent group
+  // Error case: Enable a non-existent group
   EXPECT_ANY_THROW(detector_->DisableCuboids("hoge"));
 }
 
@@ -1131,7 +1131,7 @@ TEST_P(RobotCollisionDetectorTest, GetNameList) {
   name_list = detector_->GetObjectNameListByGroup("OUTER");
   EXPECT_EQ(1, name_list.size());
 
-  // Normal case: Included in the group with grasped objects
+  // Normal case: Included in a group with grasped objects
   // Retrieve a list of object names
   name_list = detector_->GetObjectNameListByGroup(kWristGroup);
   EXPECT_EQ(3, name_list.size());
@@ -1145,7 +1145,7 @@ TEST_P(RobotCollisionDetectorTest, GetNameList) {
   name_list = detector_->GetObjectNameListByGroup("CUBOID");
   EXPECT_EQ(3, name_list.size());
 
-  // Normal case: Retrieve a list of object names included in the group where CUBOID was added
+  // Normal case: Retrieve a list of object names included in the group where a CUBOID was added
   detector_->DestroyCuboids();
   detector_->CreateCuboids(bounding_boxes_, false, "BODY");
   name_list = detector_->GetObjectNameListByGroup("BODY");
@@ -1163,7 +1163,7 @@ TEST_P(RobotCollisionDetectorTest, GetNameList) {
   name_list = detector_->GetHeldObjectList();
   EXPECT_EQ(1, name_list.size());
 
-  // Abnormal case: Specify a non-existent group name
+  // Error case: Specify a non-existent group name
   EXPECT_ANY_THROW(detector_->GetObjectNameListByGroup("hoge"));
 }
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     ik_sover.hpp
-/// @brief    ik solver
+/// @brief    IK solver
 #ifndef ROBOT_KINEMATICS_MODEL_IK_SOLVER_HPP__
 #define ROBOT_KINEMATICS_MODEL_IK_SOLVER_HPP__
 
@@ -47,9 +47,9 @@ enum IKResult {
 /// IK request
 struct IKRequest {
   IKRequest() {}
-  /// Specify BaseMovementType when there is base movement
-  explicit IKRequest(tmc_manipulation_types::BaseMovementType base_type) {
-    switch (base_type) {
+  /// Specify BaseMovementType when there is Base movement
+  explicit IKRequest(tmc_manipulation_types::BaseMovementType _base_type) : base_type(_base_type) {
+    switch (_base_type) {
       case tmc_manipulation_types::kFloat:
         linear_base_movements.push_back(Eigen::Vector3d::UnitX());
         linear_base_movements.push_back(Eigen::Vector3d::UnitY());
@@ -87,28 +87,37 @@ struct IKRequest {
         break;
     }
   }
-
-  /// Target frame name
-  std::string frame_name;
-  /// Offset from the target frame
-  Eigen::Affine3d frame_to_end;
-  /// Initial target position posture
-  Eigen::Affine3d ref_origin_to_end;
-  /// Robot position posture
+  /// Robot position and orientation
   Eigen::Affine3d origin_to_base;
-  /// Initial posture, it's good to include all joints.
+  /// Initial posture. It's better to include all joints.
   /// Otherwise, the already set joint angles will be used.
   tmc_manipulation_types::JointState initial_angle;
-  /// Target joint name
+  /// Target joint names
   std::vector<std::string> use_joints;
-  /// Weight for each joint, ignored if not the same length as use_joints+base_dof
+  /// Weights for each joint. Ignored if not the same length as use_joints+base_dof.
   Eigen::VectorXd weight;
   /// Translational base movement
   std::vector<Eigen::Vector3d> linear_base_movements;
   /// Rotational base movement
   std::vector<Eigen::Vector3d> rotational_base_movements;
-  /// Continuous joint name
+  /// Continuous joint names
   std::vector<std::string> continuous_joints;
+
+  // Target position and orientation information
+  struct IKTargetFrame {
+    std::string frame_name;
+    Eigen::Affine3d frame_to_end;
+    Eigen::Affine3d ref_origin_to_end;
+
+    IKTargetFrame(const std::string& _frame_name,
+                  const Eigen::Affine3d& origin_to_end)
+        : frame_name(_frame_name),
+          ref_origin_to_end(origin_to_end),
+          frame_to_end(Eigen::Affine3d::Identity()) {}
+    IKTargetFrame() : frame_to_end(Eigen::Affine3d::Identity()) {}
+  };
+  std::vector<IKTargetFrame> target_frames;
+  tmc_manipulation_types::BaseMovementType base_type;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -116,17 +125,17 @@ struct IKRequest {
 struct IKResponse {
   tmc_manipulation_types::JointState solution_angle;
   Eigen::Affine3d origin_to_base;
-  Eigen::Affine3d origin_to_end;
+  std::vector<Eigen::Affine3d> origin_to_ends;
 };
 
 /// IK interface
-/// Customizable IK method with chain of responsibility
-/// Example: Use analytical solution for requests using 6-axis arm
+/// Customizable IK methods using chain of responsibility
+/// Example: Use analytical solutions for requests involving a 6-axis arm
 class IKSolver {
  public:
   using Ptr = std::shared_ptr<IKSolver>;
   IKSolver() {}
-  /// @param [IN] successor IK for passing to the next in Next
+  /// @param [IN] successor IK to pass to the next in Next
   explicit IKSolver(IKSolver::Ptr successor) : successor_(successor) {}
   virtual ~IKSolver() {}
 
@@ -135,45 +144,11 @@ class IKSolver {
 
   /// Solve IK
   /// @param [IN] request IK request
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_end_out Final target position posture
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  virtual IKResult Solve(const IKRequest& request,
-                         tmc_manipulation_types::JointState& solution_angle_out,
-                         Eigen::Affine3d& origin_to_end_out)  {
-    std::function<bool()> func = []() -> bool{ return false; };
-    return Solve(request, func, solution_angle_out, origin_to_end_out);
-  }
-
-  /// Solve IK
-  /// @param [IN] request IK request
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_base_out Final target position from the base
-  /// @param [OUT] origin_to_end_out Final target position posture from the base
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  virtual IKResult Solve(const IKRequest& request,
-                         tmc_manipulation_types::JointState& solution_angle_out,
-                         Eigen::Affine3d& origin_to_base_out,
-                         Eigen::Affine3d& origin_to_end_out) {
-    std::function<bool()> func = []() -> bool{ return false; };
-    return Solve(request, func, solution_angle_out, origin_to_base_out, origin_to_end_out);
-  }
-
-  /// Solve IK
-  /// @param [IN] request IK request
   /// @param [OUT] responses_out IK solutions
-  /// @retval kSuccess Obtained one or more IK solutions
+  /// @retval kSuccess At least one IK solution was obtained
   /// @retval kFail Failure, no solution
   virtual IKResult Solve(const IKRequest& request,
                          std::vector<IKResponse>& responses_out) {
-    // Initially thought of implementing a default call to solve for one solution
-    // Decided to chain individually for consistency with existing methods
     std::function<bool()> func = []() -> bool{ return false; };
     return Solve(request, func, responses_out);
   }
@@ -181,50 +156,12 @@ class IKSolver {
   /// Solve IK
   /// @param [IN] request IK request
   /// @param [IN] interrupt Interrupt function
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_end_out Final target position posture
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  /// @retval kInterruption Interrupted by interruption
-  virtual IKResult Solve(const IKRequest& request,
-                         std::function<bool()>& interrupt,
-                         tmc_manipulation_types::JointState& solution_angle_out,
-                         Eigen::Affine3d& origin_to_end_out)  {
-    return Next_(request, interrupt, solution_angle_out, origin_to_end_out);
-  }
-
-  /// Solve IK
-  /// @param [IN] request IK request
-  /// @param [IN] interrupt Interrupt function
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_base_out Final target position from the base
-  /// @param [OUT] origin_to_end_out Final target position posture from the base
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  /// @retval kInterruption Interrupted by interruption
-  virtual IKResult Solve(const IKRequest& request,
-                         std::function<bool()>& interrupt,
-                         tmc_manipulation_types::JointState& solution_angle_out,
-                         Eigen::Affine3d& origin_to_base_out,
-                         Eigen::Affine3d& origin_to_end_out) {
-    return Next_(request, interrupt, solution_angle_out, origin_to_base_out, origin_to_end_out);
-  }
-
-  /// Solve IK
-  /// @param [IN] request IK request
-  /// @param [IN] interrupt Interrupt function
   /// @param [OUT] responses_out IK solutions
-  /// @retval kSuccess Obtained one or more IK solutions
+  /// @retval kSuccess At least one IK solution was obtained
   /// @retval kFail Failure, no solution
   virtual IKResult Solve(const IKRequest& request,
                          std::function<bool()>& interrupt,
                          std::vector<IKResponse>& responses_out) {
-    // Initially thought of implementing a default call to solve for one solution
-    // Decided to chain individually for consistency with existing methods
     return Next_(request, interrupt, responses_out);
   }
 
@@ -232,51 +169,8 @@ class IKSolver {
   /// Delegate to successor
   /// @param [IN] request IK request
   /// @param [IN] interrupt Interrupt function
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_end_out Final target position posture from the base
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  IKResult Next_(const IKRequest& request,
-                 std::function<bool()>& interrupt,
-                 tmc_manipulation_types::JointState& solution_angle_out,
-                 Eigen::Affine3d& origin_to_end_out) {
-    if (successor_) {
-      return successor_->Solve(request, interrupt, solution_angle_out, origin_to_end_out);
-    } else {
-      return kFail;
-    }
-  }
-
-  /// Delegate to successor
-  /// @param [IN] request IK request
-  /// @param [IN] interrupt Interrupt function
-  /// @param [OUT] solution_angle_out Solution joint angles
-  /// @param [OUT] origin_to_base_out Final robot position from the base
-  /// @param [OUT] origin_to_end_out Final target position posture from the base
-  /// @retval kSuccess Success
-  /// @retval kConverge Converged with large terminal error
-  /// @retval kMaxItr Reached maximum iteration count
-  /// @retval kFail Failure, no solution
-  IKResult Next_(const IKRequest& request,
-                 std::function<bool()>& interrupt,
-                 tmc_manipulation_types::JointState& solution_angle_out,
-                 Eigen::Affine3d& origin_to_base_out,
-                 Eigen::Affine3d& origin_to_end_out) {
-    if (successor_) {
-      return successor_->Solve(request, interrupt, solution_angle_out,
-                               origin_to_base_out, origin_to_end_out);
-    } else {
-      return kFail;
-    }
-  }
-
-  /// Delegate to successor
-  /// @param [IN] request IK request
-  /// @param [IN] interrupt Interrupt function
   /// @param [OUT] responses_out IK solutions
-  /// @retval kSuccess Obtained one or more IK solutions
+  /// @retval kSuccess At least one IK solution was obtained
   /// @retval kFail Failure, no solution
   IKResult Next_(const IKRequest& request,
                  std::function<bool()>& interrupt,

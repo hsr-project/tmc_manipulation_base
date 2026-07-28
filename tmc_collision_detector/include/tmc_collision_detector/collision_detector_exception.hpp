@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -52,7 +52,7 @@ class NonExistTypeError : public std::domain_error {
   std::domain_error("error: not exist primitive type " + error) {}
 };
 
-/// Invalid shape parameters (negative length, STL file does not exist, etc.)
+/// Invalid shape parameter (negative length, STL file does not exist, etc.)
 class InvalidShapeParamError : public std::domain_error {
  public:
   explicit InvalidShapeParamError(const std::string& error) :
